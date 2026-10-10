@@ -8,6 +8,10 @@ Tài liệu chính: [Phạm vi và quyết định MVP v1](docs/MVP_V1.md).
 
 Bước tiếp theo đã được cụ thể hóa trong [Đặc tả luồng và dữ liệu MVP v1 — bản nháp](docs/WORKFLOW_SPEC_V1_DRAFT.md): hội thoại, trạng thái, cấu trúc dữ liệu Sheets, ngoại lệ và kịch bản nghiệm thu. Bản nháp cần rà soát; các đề xuất mới chưa phải quyết định đã chốt.
 
+[Ví dụ tin nhắn MVP v1](docs/MESSAGE_EXAMPLES_V1_DRAFT.md) bổ sung các mẫu gửi người tạo yêu cầu, người vận hành và người nhận ca, gồm nghỉ, nhận thay, hoán đổi, issue, tra cứu và ngoại lệ.
+
+[Nghiên cứu nút bấm trên Zalo](docs/ZALO_BUTTON_RESEARCH.md) đối chiếu Bot Platform, OA và phương án trang xác nhận có nút; phân biệt khả năng được tài liệu mô tả với phần chưa thử nghiệm thực tế.
+
 Đã ghi nhận phạm vi tự động nhận thay một ca và hoán đổi hai ca. [Đối chiếu Google Sheets — bản nháp](docs/SHEETS_MAPPING_V1_DRAFT.md) đã cập nhật theo xác nhận: D là phân công chính thức, J phục vụ xếp ca, B–J là nguồn chuẩn, ca sáng 09:00–13:00 và chiều 14:00–18:00. Quy tắc đọc/ghi, định danh và xử lý ngoại lệ tiếp tục được rà soát.
 
 Đã chốt vận hành xác thực liên kết Zalo với mã labcoach trước khi dùng; bot kiểm tra lịch chương trình và người nhận tự xác nhận không có lịch bận khác trong ca nhận. Các luồng nhận thay/hoán đổi và kịch bản nghiệm thu đã được cập nhật theo hai quy tắc này.

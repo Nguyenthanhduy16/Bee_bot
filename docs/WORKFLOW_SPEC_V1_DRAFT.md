@@ -64,6 +64,8 @@ Nếu đổi tài khoản hoặc ngừng tham gia, vận hành cập nhật liê
 
 Các câu bên dưới là mẫu nội dung, không yêu cầu nền tảng có nút bấm. Mọi ngày giờ khi xác nhận phải ghi đầy đủ ngày, năm và giờ theo múi giờ vận hành được thống nhất. Đề xuất dùng Asia/Ho_Chi_Minh; chỉ diễn giải từ như “mai” khi xác định được thời điểm gửi, rồi nhắc lại bằng ngày cụ thể.
 
+Khả năng dùng nút trong lời mời/chấp nhận được phân tích tại [Nghiên cứu nút bấm trên Zalo](ZALO_BUTTON_RESEARCH.md). Kết quả nghiên cứu chưa thay đổi các điều kiện xác nhận, quyền, hạn hoặc thứ tự nhận ca, và chưa phải quyết định chọn giao diện.
+
 Thông tin ca lấy từ tiêu đề ngày ở A và vùng bảng chính B–J, giải đúng ô gộp. Sáng hiển thị 09:00–13:00, chiều 14:00–18:00. Người đang phụ trách lấy từ D; nhãn Rảnh ở J không thay cho xác nhận trực tiếp hoặc kiểm tra phân công trùng lịch.
 
 ### 3.1. Nhận thay một ca đã có người dự kiến
@@ -123,7 +125,7 @@ Mẫu trả lời khi đang giữ vị trí: “Bạn là người xác nhận �
 2. Kiểm tra An đang phụ trách A, Bình đang phụ trách B, cả hai là labcoach hợp lệ, hai phân công khác nhau và chưa có yêu cầu đang mở xung đột. Một lớp có nhiều labcoach thì chọn đúng vị trí của An/Bình, giữ các vị trí còn lại.
 3. Bot trình bày đầy đủ: “An chuyển ca A cho Bình; Bình chuyển ca B cho An”, kèm lớp, ngày/giờ, cơ sở/phòng của cả hai ca. An xác nhận rõ đồng ý giao A, nhận B và không có lịch bận khác trong khoảng ca B nhận về. Lưu một mã yêu cầu chung và hai dòng phân công liên quan.
 4. Bot gửi trực tiếp cho Bình cùng nội dung hai ca, yêu cầu xác nhận giao B, nhận A và không có lịch bận khác trong khoảng ca A nhận về. Xác nhận đầy đủ của An ở bước 3 là xác nhận trực tiếp của An; không cần mời lại trừ khi nội dung đổi thay đổi. Thiếu xác nhận lịch bận khác của một trong hai người thì hỏi bổ sung, chưa thực hiện hoán đổi.
-5. Sau khi Bình đồng ý, đọc lại hai phân công, thông tin hai ca và lịch của cả hai. Kiểm tra lịch giả định sau hoán đổi: bỏ A khỏi lịch An và B khỏi lịch Bình, thêm B cho An và A cho Bình, rồi kiểm tra xung đột trên kết quả đó. Không coi ca được giao đi là lịch bận vẫn giữ lại.
+5. Sau khi Bình đồng ý, đọc lại thông tin hai ca và lịch của cả hai. Bot tính thử lịch sau khi đổi: An phụ trách ca B thay cho ca A, Bình phụ trách ca A thay cho ca B. Sau đó kiểm tra ca nhận về của mỗi người có trùng với các ca khác mà người đó vẫn phụ trách hay không. Đây chỉ là bước kiểm tra; chưa sửa lịch trên Sheets.
 6. Nếu có xung đột, xác nhận hết hiệu lực, phân công gốc thay đổi hoặc nội dung ca đã đổi, giữ yêu cầu chưa hoàn tất và hỏi lại/chuyển vận hành theo lý do. Không tự đổi riêng một ca.
 7. Khi đủ điều kiện, chuyển một yêu cầu chung sang đang cập nhật lịch và thực hiện cả hai thay đổi. Kiểm tra kết quả: A thuộc Bình và B thuộc An, thông tin ca cùng các phân công khác vẫn đúng.
 8. Chỉ chuyển hoàn tất khi cả hai phân công đã phản ánh đúng trên lịch chính thức. Gửi một kết quả chung cho An, Bình và vận hành, thể hiện rõ ca mỗi người nhận sau đổi.
@@ -260,7 +262,7 @@ Nếu vận hành nhập “Hoàn tất” nhưng lịch chưa đúng, bot giữ
 
 Hai khoảng giờ xung đột khi `bắt đầu A < kết thúc B` và `bắt đầu B < kết thúc A`. Hai ca nối tiếp đúng giờ không xung đột theo công thức này; khoảng đệm di chuyển giữa cơ sở còn cần chốt.
 
-**Giờ ca đã chốt:** Sáng 09:00–13:00, Chiều 14:00–18:00 cho mọi lớp có lịch. Với lịch này, hai phân công cùng ngày/cùng buổi giao nhau; sáng và chiều không giao nhau về thời gian. Người đã có tên ở D trong một ca vẫn có phân công đó dù J ghi Bận/Chưa cập nhật; J không được dùng để bỏ qua ca khi kiểm tra. Hoán đổi chỉ loại các phân công được giao đi khỏi lịch giả định, không loại các ca khác.
+**Giờ ca đã chốt:** Sáng 09:00–13:00, Chiều 14:00–18:00 cho mọi lớp có lịch. Với lịch này, hai phân công cùng ngày/cùng buổi giao nhau; sáng và chiều không giao nhau về thời gian. Người đã có tên ở D trong một ca vẫn có phân công đó dù J ghi Bận/Chưa cập nhật; J không được dùng để bỏ qua ca khi kiểm tra. Khi hoán đổi, bot tính thử lịch mới của mỗi người: thay ca giao đi bằng ca nhận về, giữ nguyên các ca khác, rồi kiểm tra trùng lịch.
 
 **Đã chốt:** bot kiểm tra lịch chương trình và yêu cầu người nhận tự xác nhận không có lịch bận khác trong khoảng ca nhận. Hoán đổi áp dụng cho cả hai người tại ca nhận về.
 
@@ -304,6 +306,8 @@ Hai khoảng giờ xung đột khi `bắt đầu A < kết thúc B` và `bắt �
 Đọc lại lịch trước khi ghi là điều kiện cần, chưa đủ để ngăn sửa đồng thời. Trước khi bật tự động cập nhật, thiết kế kỹ thuật phải chỉ rõ cách xử lý khi vận hành hoặc bot sửa cùng phân công giữa lúc kiểm tra và ghi. Nếu chưa bảo đảm được, giữ yêu cầu cho vận hành xử lý; không báo rằng đã tránh mọi xung đột.
 
 ## 7. Thông báo và công việc tồn đọng
+
+Các ví dụ nội dung gửi cho người tạo yêu cầu, vận hành và người nhận ca được lưu tại [Ví dụ tin nhắn MVP v1](MESSAGE_EXAMPLES_V1_DRAFT.md). Mẫu phân biệt rõ đã ghi nhận, chờ chấp nhận, đang tìm người, đang cập nhật và hoàn tất. Câu trả lời ngắn kèm mã và lệnh chấp nhận trong chat vẫn là đề xuất tương tác, chưa phải quyết định đã chốt.
 
 **Đã chốt:** thông báo thay đổi trạng thái cho người gửi; thông báo vận hành và tổng hợp việc còn tồn đọng. Với nhận thay ca, thông báo kết quả cho các bên liên quan.
 

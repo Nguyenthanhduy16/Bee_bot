@@ -127,6 +127,8 @@ Bot cần làm rõ yêu cầu nào nếu một câu hỏi có thể ứng với 
 
 Cấu trúc lịch hiện tại đã được đọc và ý nghĩa D/J, vùng B–J làm chuẩn, giờ ca đã được người phụ trách xác nhận; xem [đối chiếu Sheets](SHEETS_MAPPING_V1_DRAFT.md). Tên tab/cột theo dõi yêu cầu và issue bổ sung, người nhận thông báo và thời điểm gửi bản tổng hợp chưa được chốt.
 
+Đã bổ sung [Ví dụ tin nhắn cho người gửi, vận hành và người nhận ca](MESSAGE_EXAMPLES_V1_DRAFT.md) để rà soát nội dung theo từng tình huống. Đây là mẫu đề xuất; chưa chốt nút bấm hoặc chấp nhận yêu cầu ngay trong chat.
+
 ## 8. Giới hạn phạm vi MVP
 
 MVP tập trung vào thay đổi lịch đã công bố và sự cố phòng học. Các nội dung sau nằm ngoài phạm vi hiện tại:
@@ -154,6 +156,8 @@ Theo trang dịch vụ đã kiểm tra trong buổi brainstorming ngày 10/10/20
 Tự động hóa tài khoản cá nhân bằng `zca-js` cũng đã được thảo luận. Đây là thư viện không chính thức; tác giả cảnh báo tài khoản có thể bị khóa. Chưa lựa chọn phương án này.
 
 ### Backend và AI
+
+Khả năng dùng nút được lưu tại [Nghiên cứu nút bấm trên Zalo](ZALO_BUTTON_RESEARCH.md). OA có tài liệu về nút; Bot Platform có công bố tính năng ở trang tổng quan nhưng API chi tiết/SDK chưa đủ để xác minh cách triển khai. Phương án phản hồi chữ hoặc trang xác nhận có nút vẫn đang mở, chưa chốt.
 
 - Nền tảng chat cung cấp việc nhận/gửi tin; logic nghiệp vụ cần được xây hoặc cấu hình riêng.
 - Đã thảo luận hai lựa chọn: tự xây backend hoặc dùng công cụ workflow của bên thứ ba. Người dùng chưa chốt lựa chọn.
