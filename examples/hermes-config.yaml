@@ -1,0 +1,15 @@
+# Template only: replace /ABS/PATH/Bee_Bot with the absolute checkout path.
+# Use a separate Hermes profile per actor. Preserve personal Hermes config.
+mcp_servers:
+  bee_bot:
+    command: /ABS/PATH/Bee_Bot/.venv/bin/python
+    args: ["-m", "bee_bot.mcp_server"]
+    cwd: /ABS/PATH/Bee_Bot
+    timeout: 30
+    supports_parallel_tool_calls: false
+    env:
+      BEE_BOT_ACTOR_ID: an
+      BEE_BOT_DB: /ABS/PATH/Bee_Bot/.bee-bot/state.db
+      BEE_BOT_SCHEDULE: /ABS/PATH/Bee_Bot/.bee-bot/schedule.json
+platform_toolsets:
+  acp: [skills, bee_bot]

@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+bee_bot_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+bee_bot_actor="${1:-}"
+case "$bee_bot_actor" in
+  an|binh|chi|dung|ops) ;;
+  *) printf 'Usage: %s {an|binh|chi|dung|ops} [--acp | chat options]\n' "$0" >&2; exit 2 ;;
+esac
+shift
+cd -- "$bee_bot_root"
+if [[ "${1:-}" == "--acp" ]]; then
+  shift
+  exec hermes -p "bee-bot-$bee_bot_actor" acp "$@"
+fi
+exec hermes -p "bee-bot-$bee_bot_actor" chat -t skills,bee_bot "$@"
