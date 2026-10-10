@@ -3,13 +3,17 @@
 - **Dự án:** Bee Bot.
 - **Ngày đóng gói:** 10/10/2026.
 - **Trạng thái:** đã chốt phạm vi nghiệp vụ MVP v1.
-- **Giai đoạn:** đặc tả; chưa viết code, đăng ký bot hoặc triển khai hệ thống.
+- **Giai đoạn:** đã xây bản thử Python/SQLite/MCP, dùng Hermes thật qua Paseo và tra cứu lịch thử qua Bot BeeCoach trên Zalo; chưa mở pilot với Sheets thật.
+- **Định hướng kỹ thuật bổ sung:** người phụ trách đã xác nhận các phần cần chốt và yêu cầu Lead điều phối Peer thực hiện. Xem [hướng dẫn bản chạy](HERMES_LOCAL_SETUP.md) và [báo cáo nghiệm thu](ACCEPTANCE_REPORT_V1.md); kiến trúc pilot thật tiếp tục được kiểm chứng theo [thiết kế Hermes](HERMES_DEPLOYMENT_V1_DRAFT.md).
 - **Căn cứ:** các quyết định được thống nhất trong buổi brainstorming với người phụ trách dự án.
 - **Cập nhật khi tiếp tục ngày 10/10/2026:** người phụ trách chốt MVP tự động hỗ trợ cả nhận thay một ca và hoán đổi hai ca. Chi tiết thực hiện đang được đặc tả trong [bản nháp luồng và dữ liệu](WORKFLOW_SPEC_V1_DRAFT.md).
 - **Bổ sung về Sheets:** người phụ trách xác nhận D là phân công chính thức, J là thông tin bận/rảnh phục vụ xếp ca, vùng B–J là nguồn chuẩn; ca sáng 09:00–13:00 và ca chiều 14:00–18:00 áp dụng cho tất cả lớp có lịch.
 - **Bổ sung về định danh và lịch bận:** vận hành xác thực liên kết Zalo với từng labcoach trước khi dùng; bot kiểm tra lịch chương trình và yêu cầu người nhận tự xác nhận không có lịch bận khác trong ca nhận.
 - **Bổ sung mới về nghỉ và lời mời:** lời mời hết hạn sau 24 giờ, không muộn hơn lúc ca bắt đầu; hoán đổi dùng ca bắt đầu sớm hơn. Với nghỉ chưa có người thay, sau khi vận hành chấp nhận yêu cầu, bot có thể nhắn tìm người nhận ca, lấy xác nhận trực tiếp và cập nhật lịch. Bot giữ nguyên J khi đổi người ở D; vận hành tự cập nhật J. Quyết định tìm người sau chấp nhận thay thế giới hạn không tự tìm/mời của phiên bản trước.
 - **Cách tìm người đã chốt:** nhắn đồng thời các labcoach hợp lệ không trùng lịch; người nhận đủ điều kiện sớm nhất được nhận, người trả lời sau không được nhận cùng vị trí.
+- **Bổ sung người thay khi đang chờ duyệt nghỉ:** nếu người gửi tự tìm được người thay và bổ sung vào yêu cầu đang chờ vận hành chấp nhận, bot báo vận hành, giữ cùng mã và chuyển sang luồng nhận thay không cần duyệt nghỉ. Vẫn cần người thay xác nhận trực tiếp và đủ điều kiện trước cập nhật lịch.
+- **Kênh tiếp nhận đã chốt:** khi mở pilot, chuyển yêu cầu thông thường sang bot Zalo làm đầu mối; ngừng dùng Google Form/tin riêng làm kênh tiếp nhận thường lệ. Vận hành hỗ trợ khi bot lỗi hoặc có việc khẩn.
+- **Quyền cập nhật lịch đã chốt:** vận hành và bot đều được sửa D trực tiếp. Bot kiểm tra lại lịch trước khi ghi; phát hiện thay đổi ảnh hưởng yêu cầu thì dừng và đối chiếu, còn đủ điều kiện thì cập nhật D, giữ J và xác minh kết quả. Giới hạn sửa đồng thời giữa lúc kiểm tra và ghi cần được kiểm chứng trước pilot.
 
 ## 1. Bối cảnh và mục tiêu
 
@@ -26,10 +30,12 @@ MVP tạo một đầu mối chat trên Zalo để ghi nhận, xử lý và theo
 | Đối tượng sử dụng | Labcoach và team vận hành; chưa mở cho giảng viên hoặc học viên trong MVP |
 | Quy mô ban đầu | Khoảng 30–40 người, tính cả labcoach và vận hành; về sau có thể tăng |
 | Kênh tương tác | Người dùng nhắn riêng với bot trên Zalo |
+| Chuyển đổi kênh tiếp nhận | Từ pilot, yêu cầu thông thường qua bot; Google Form/tin riêng không tiếp tục là kênh thường lệ. Vận hành hỗ trợ khi bot lỗi hoặc có việc khẩn |
 | Nguồn lịch chính thức | Google Sheets hiện có |
 | Người được phân công | Người ở cột D là phân công chính thức nếu chưa có thay đổi |
 | Cột J của lịch | Thông tin bận/rảnh dùng để xếp ca |
 | J khi bot đổi người ở D | Bot giữ nguyên J; vận hành tự cập nhật |
+| Quyền cập nhật D | Cả vận hành và bot sửa trực tiếp; bot kiểm tra trước ghi và xác minh sau ghi, xử lý thay đổi ảnh hưởng yêu cầu |
 | Vùng thông tin làm chuẩn | B–J của bảng chính; ưu tiên bảng chính khi khác vùng thông tin lặp K–P |
 | Giờ ca | Sáng 09:00–13:00; chiều 14:00–18:00, áp dụng cho tất cả lớp có lịch |
 | Định danh labcoach | Dùng danh sách mã labcoach và tài khoản Zalo được vận hành xác thực trước khi sử dụng |
@@ -39,6 +45,7 @@ MVP tạo một đầu mối chat trên Zalo để ghi nhận, xử lý và theo
 | Hoán đổi hai ca | Tự xử lý hoán đổi hai ca; chi tiết xác nhận, kiểm tra lịch sau đổi và cập nhật hai phân công được đặc tả trước khi triển khai |
 | Hạn lời mời | 24 giờ từ lời mời, tối đa đến lúc ca bắt đầu; hoán đổi dùng ca bắt đầu sớm hơn |
 | Nghỉ chưa có người thay | Ghi nhận và chờ vận hành chấp nhận; sau chấp nhận, bot có thể nhắn tìm người nhận ca rồi cập nhật lịch khi đủ điều kiện |
+| Người gửi bổ sung người thay khi đang chờ chấp nhận nghỉ | Báo vận hành, giữ mã và chuyển sang nhận thay không cần duyệt nghỉ; người thay vẫn xác nhận trực tiếp và được kiểm tra điều kiện |
 | Cách bot tìm người nhận | Nhắn đồng thời các labcoach hợp lệ không trùng lịch; người nhận đủ điều kiện sớm nhất được nhận, phản hồi sau không nhận cùng vị trí |
 | Người nhận do vận hành bố trí | Bot vẫn lấy xác nhận trực tiếp và kiểm tra điều kiện trước khi cập nhật lịch |
 | Báo issue | Tiếp nhận và theo dõi sự cố phòng học, cơ sở vật chất |
@@ -64,6 +71,8 @@ MVP tạo một đầu mối chat trên Zalo để ghi nhận, xử lý và theo
 **Bổ sung đã chốt khi tiếp tục:** MVP hỗ trợ tự động cả nhận thay một ca và hoán đổi hai ca. Luồng hoán đổi hai ca được cụ thể hóa trong bản đặc tả nháp; không coi việc chốt phạm vi này là đã duyệt cách triển khai kỹ thuật.
 
 ## 4. Luồng báo nghỉ chưa có người thay
+
+**Nhánh đã chốt:** trong lúc chờ vận hành chấp nhận, nếu người gửi bổ sung được người thay, bot báo vận hành và chuyển cùng yêu cầu sang luồng nhận thay ở mục 3, không cần chờ duyệt nghỉ. Chỉ khi người thay xác nhận trực tiếp và đủ điều kiện thì bot mới cập nhật lịch; việc bổ sung tên chưa đồng nghĩa đã bố trí xong. Các bước dưới đây áp dụng khi vẫn chưa có người thay.
 
 1. Người gửi báo ca cần nghỉ.
 2. Bot xác định đúng ca, ghi nhận yêu cầu và cấp mã theo dõi.
@@ -141,9 +150,9 @@ MVP tập trung vào thay đổi lịch đã công bố và sự cố phòng h�
 - Tự giải quyết sự cố cơ sở vật chất.
 - Tự động hóa thêm các nghiệp vụ vận hành khác.
 
-## 9. Phương án kỹ thuật đã thảo luận — chưa chốt
+## 9. Định hướng kỹ thuật và phương án tích hợp
 
-Phần này lưu kết quả tìm hiểu và các đề xuất, không biến chúng thành quyết định triển khai.
+Đã chọn Hermes Agent làm nền tảng agent và hoàn thiện thiết kế/hướng dẫn trước. Phần này giữ các phương án tích hợp đã thảo luận; lựa chọn Hermes chưa đồng nghĩa đã chốt toàn bộ backend, kênh API Zalo hoặc cách triển khai dịch vụ. Xem [thiết kế Hermes](HERMES_DEPLOYMENT_V1_DRAFT.md).
 
 ### Kết nối Zalo
 
@@ -160,8 +169,8 @@ Tự động hóa tài khoản cá nhân bằng `zca-js` cũng đã được th�
 Khả năng dùng nút được lưu tại [Nghiên cứu nút bấm trên Zalo](ZALO_BUTTON_RESEARCH.md). OA có tài liệu về nút; Bot Platform có công bố tính năng ở trang tổng quan nhưng API chi tiết/SDK chưa đủ để xác minh cách triển khai. Phương án phản hồi chữ hoặc trang xác nhận có nút vẫn đang mở, chưa chốt.
 
 - Nền tảng chat cung cấp việc nhận/gửi tin; logic nghiệp vụ cần được xây hoặc cấu hình riêng.
-- Đã thảo luận hai lựa chọn: tự xây backend hoặc dùng công cụ workflow của bên thứ ba. Người dùng chưa chốt lựa chọn.
-- Đã đề xuất dùng AI để hiểu tin nhắn và tổng hợp, còn các quyết định sửa lịch dựa trên quy tắc và xác nhận cụ thể. Kiến trúc, nhà cung cấp AI và công nghệ triển khai chưa được chọn.
+- Đã thảo luận hai lựa chọn: tự xây backend hoặc dùng công cụ workflow của bên thứ ba. Nay đã chọn Hermes Agent; phần dịch vụ nghiệp vụ và kết nối với Hermes được đề xuất trong thiết kế, chưa triển khai.
+- Đã đề xuất dùng AI để hiểu tin nhắn và tổng hợp, còn các quyết định sửa lịch dựa trên quy tắc và xác nhận cụ thể. Đã chọn Hermes Agent; nhà cung cấp AI và chi tiết kiến trúc/công nghệ triển khai chưa chốt.
 - Đã đề xuất tách phần kết nối Zalo khỏi logic nghiệp vụ để thuận tiện mở rộng. Đây là định hướng kỹ thuật, chưa phải thiết kế đã duyệt.
 
 Nguồn tham khảo:
@@ -184,12 +193,12 @@ Các điểm sau còn cần làm rõ trước khi triển khai; những phần �
 4. Danh mục bảng/kỳ lịch chương trình cần tích hợp và khoảng đệm di chuyển nếu có. Nguyên tắc kiểm tra lịch chương trình kết hợp người nhận tự xác nhận không có lịch bận khác đã chốt.
 5. Người nhận thông báo vận hành, lịch gửi bản tổng hợp và cách ưu tiên việc khẩn/sát giờ học.
 6. Chi tiết ghi nhận thứ tự, giữ vị trí, xử lý từ chối/không phản hồi/hủy và lỗi cập nhật. Đã chốt mời đồng thời, người nhận đủ điều kiện sớm nhất được nhận, hạn lời mời 24 giờ tối đa đến lúc ca bắt đầu và xác nhận trực tiếp cho người do vận hành bố trí.
-7. Trường hợp vận hành sửa lịch trực tiếp khi bot đang xử lý và cách xử lý lỗi cập nhật/thông báo.
+7. Đã chốt cả vận hành và bot cập nhật D trực tiếp, bot kiểm tra trước ghi và xác minh sau ghi. Còn kiểm chứng giới hạn sửa đồng thời giữa hai bước, cách phối hợp/đối chiếu và xử lý lỗi cập nhật/thông báo.
 8. Cách liên kết các phản ánh trùng về cùng một sự cố; tiêu chí phân biệt các sự cố trong cùng phòng.
-9. Chuyển đổi từ Google Form/tin nhắn cá nhân sang bot: tiếp tục nhận qua các kênh cũ hay quy định một đầu mối.
-10. Lựa chọn kỹ thuật, cách lưu dữ liệu, vận hành hệ thống và phương án mở rộng khi vượt hạn mức nền tảng.
+9. Đã chốt chuyển sang bot làm đầu mối từ pilot. Còn chuẩn bị thông báo chuyển kênh, đối chiếu yêu cầu đang mở từ kênh cũ và hướng dẫn hỗ trợ khi bot lỗi hoặc có việc khẩn.
+10. Chi tiết tích hợp với Hermes Agent đã chọn, cách lưu dữ liệu, vận hành hệ thống và phương án mở rộng khi vượt hạn mức nền tảng.
 11. Tiêu chí đánh giá pilot và cách đo số tin nhắn, yêu cầu bị bỏ sót, thời gian xử lý, mức độ sử dụng.
 
 ## 11. Bước tiếp theo
 
-Đặc tả luồng hội thoại, cấu trúc Sheets và các ngoại lệ dựa trên phạm vi đã chốt. Không xem việc chốt nghiệp vụ hoặc lưu tài liệu này là một quyết định chọn kiến trúc, tạo tài khoản nền tảng hay bắt đầu triển khai phần mềm.
+Người phụ trách nghiệm thu bản thử qua Paseo theo [hướng dẫn](HERMES_LOCAL_SETUP.md). Lead tiếp tục nối worker hội thoại/thông báo Zalo, hoàn thiện danh tính và nguồn lịch cho pilot, rồi nghiệm thu tích hợp thật. Bản thử đã có mã và bằng chứng kỹ thuật; chưa mở pilot hoặc ghi lịch nguồn.

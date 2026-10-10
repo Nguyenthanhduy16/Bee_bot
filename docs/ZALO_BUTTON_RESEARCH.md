@@ -82,7 +82,7 @@ Khi mở link chỉ hiển thị thông tin; thay đổi trạng thái xảy ra 
 5. Kiểm tra lại lịch chương trình, xử lý bấm nhiều lần/phản hồi đồng thời và giữ vị trí trước cập nhật.
 6. Chỉ báo hoàn tất khi Sheets đã cập nhật đúng; bot giữ nguyên J.
 
-Thử nghiệm nút tối thiểu cần chứng minh: gửi được tin kèm nút, bấm nút tạo dữ liệu mà backend xử lý được, xác định được đúng người/mã/hành động, và xử lý đúng hạn/giữ vị trí khi hai người cùng nhận. Hiện chưa thực hiện thử nghiệm này vì chưa có bot/OA được chọn và cấu hình trong dự án.
+Thử nghiệm nút tối thiểu cần chứng minh: gửi được tin kèm nút, bấm nút tạo dữ liệu mà backend xử lý được, xác định được đúng người/mã/hành động, và xử lý đúng hạn/giữ vị trí khi hai người cùng nhận. Bot BeeCoach đã được tạo và kiểm chứng tra cứu bằng tin văn bản qua Hermes; chưa thực hiện thử nghiệm nút bấm này.
 
 ## 6. Đề xuất bước tiếp theo
 

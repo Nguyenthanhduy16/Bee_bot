@@ -2,8 +2,8 @@
 
 - **Ngày soạn:** 10/10/2026.
 - **Căn cứ:** [Phạm vi và quyết định MVP v1](MVP_V1.md).
-- **Mục đích:** cụ thể hóa bước tiếp theo để rà soát nghiệp vụ trước khi lập trình.
-- **Trạng thái:** bản đề xuất, chưa được người phụ trách duyệt.
+- **Mục đích:** đặc tả nghiệp vụ và căn cứ nghiệm thu bản thử/pilot.
+- **Trạng thái:** người phụ trách đã xác nhận quy tắc trong [bảng quyết định](DECISIONS_TO_START_V1.md) và yêu cầu thực hiện; bản thử đã được xây. Tên tab/cột pilot và các chi tiết chưa kiểm chứng vẫn là đề xuất.
 
 Các quy tắc ghi **Đã chốt** kế thừa tài liệu phạm vi. Tên tab/cột, mã trạng thái, điều kiện ngoại lệ, mẫu hội thoại và cách tổ chức dữ liệu dưới đây là **Đề xuất**. Không coi bản nháp này là quyết định chọn kiến trúc, nền tảng hay nhà cung cấp AI.
 
@@ -14,8 +14,10 @@ Các quy tắc ghi **Đã chốt** kế thừa tài liệu phạm vi. Tên tab/c
 | Quy tắc | Mức quyết định |
 | --- | --- |
 | Lịch chính thức nằm trên Google Sheets | Đã chốt |
+| Từ pilot, yêu cầu thông thường gửi qua bot Zalo; vận hành hỗ trợ khi bot lỗi hoặc có việc khẩn, không duy trì Google Form/tin riêng làm kênh thường lệ | Đã chốt khi tiếp tục |
 | Cột D là phân công chính thức; J là thông tin khả dụng phục vụ xếp ca | Đã chốt khi tiếp tục |
 | Khi bot đổi người ở D, giữ nguyên J để vận hành tự cập nhật | Đã chốt khi tiếp tục |
+| Vận hành và bot đều được cập nhật D trực tiếp; bot đọc lại để kiểm tra trước ghi và xác minh kết quả sau ghi | Đã chốt khi tiếp tục; giới hạn sửa đồng thời còn cần kiểm chứng |
 | B–J là vùng nguồn chuẩn khi khác K–P | Đã chốt khi tiếp tục |
 | Mọi lớp có lịch dùng ca sáng 09:00–13:00 và chiều 14:00–18:00 | Đã chốt khi tiếp tục |
 | Liên kết tài khoản Zalo với mã labcoach được vận hành xác thực trước khi dùng | Đã chốt khi tiếp tục |
@@ -26,6 +28,7 @@ Các quy tắc ghi **Đã chốt** kế thừa tài liệu phạm vi. Tên tab/c
 | Tự động hỗ trợ cả nhận thay một ca và hoán đổi hai ca | Đã chốt khi tiếp tục |
 | Chỉ báo hoàn tất thay ca khi lịch đã cập nhật thành công | Đã chốt |
 | Nghỉ chưa có người thay: chờ vận hành chấp nhận, sau đó bot có thể nhắn tìm người nhận ca | Đã chốt khi tiếp tục, thay thế giới hạn trước |
+| Người gửi bổ sung người thay khi đang chờ vận hành chấp nhận: báo vận hành, giữ mã yêu cầu và chuyển sang nhận thay không cần duyệt nghỉ | Đã chốt khi tiếp tục |
 | Nhắn đồng thời các labcoach hợp lệ không trùng lịch; người nhận đủ điều kiện sớm nhất được nhận, người sau không nhận cùng vị trí | Đã chốt khi tiếp tục |
 | Người do vận hành bố trí vẫn phải trực tiếp xác nhận với bot trước cập nhật lịch | Đã chốt khi tiếp tục |
 | Lời mời hết hạn sau 24 giờ, tối đa đến lúc ca bắt đầu; hoán đổi dùng ca sớm hơn | Đã chốt khi tiếp tục |
@@ -88,7 +91,7 @@ Không yêu cầu lý do nghỉ nếu không cần cho xử lý. Nhận thay cù
 1. Người gửi báo ca nghỉ; bot xác định phân công và hỏi lại khi thiếu thông tin.
 2. Bot nhắc lại ca và nêu rõ: “Yêu cầu sẽ được gửi cho vận hành xem và chấp nhận. Sau chấp nhận, bot có thể tìm người nhận ca. Ca chưa có người thay cho đến khi người nhận xác nhận và lịch được cập nhật.”
 3. Người gửi xác nhận; bot lưu yêu cầu, cấp mã và thông báo vận hành.
-4. Vận hành xác định đúng mã/ca và chấp nhận yêu cầu. Chưa có chấp nhận thì bot không phát lời mời tìm người. Ghi người chấp nhận, thời điểm và nội dung ca được chấp nhận.
+4. Nếu vẫn chưa có người thay, vận hành xác định đúng mã/ca và chấp nhận yêu cầu trước khi bot phát lời mời tìm người. Ghi người chấp nhận, thời điểm và nội dung ca được chấp nhận. Nếu người gửi bổ sung người thay trong lúc chờ chấp nhận, chuyển sang nhánh nhận thay bên dưới.
 5. Nếu vận hành đề cử người nhận, bot lấy xác nhận trực tiếp của người đó như luồng 3.1. Nếu chưa có người đề cử, bot nhắn tìm người nhận sau chấp nhận theo mục 3.2.1. Không yêu cầu thêm một lần duyệt chỉ để bắt đầu tìm người cho cùng nội dung đã chấp nhận.
 6. Người nhận xác nhận nhận ca và không có lịch bận khác; bot đọc lại lịch, kiểm tra tài khoản, hiệu lực lời mời, phân công gốc và không trùng lịch chương trình.
 7. Đủ điều kiện thì bot cập nhật đúng D, giữ nguyên J và kiểm tra kết quả. Chỉ sau khi lịch đúng mới báo “Đã bố trí và cập nhật lịch”, thông báo người gửi, người nhận và vận hành.
@@ -96,7 +99,11 @@ Không yêu cầu lý do nghỉ nếu không cần cho xử lý. Nhận thay cù
 
 **Đã chốt:** người do vận hành bố trí vẫn phải trực tiếp xác nhận với bot; bot có thể nhắn tìm người sau khi vận hành chấp nhận yêu cầu nghỉ. Đây là mở rộng thay thế giới hạn không tìm/mời người của bản trước.
 
-Nếu người gửi bổ sung người thay khi yêu cầu nghỉ đang chờ, đề xuất cập nhật cùng mã và vẫn giữ bước vận hành chấp nhận của yêu cầu nghỉ đó; không tự đổi loại để bỏ qua bước chấp nhận. Luồng nhận thay đã có người ngay từ đầu ở mục 3.1 và hoán đổi ở mục 3.3 tiếp tục không cần vận hành duyệt từng yêu cầu.
+**Đã chốt — bổ sung người thay khi đang chờ vận hành chấp nhận:** bot cập nhật cùng mã yêu cầu, báo vận hành rằng người gửi đã tìm được người dự kiến nhận thay và chuyển yêu cầu sang luồng nhận thay ở mục 3.1; không cần chờ vận hành chấp nhận nghỉ. Người thay vẫn phải xác nhận trực tiếp việc nhận ca và không có lịch bận khác; bot kiểm tra lịch chương trình và các điều kiện trước khi cập nhật D, giữ nguyên J. Thông báo đã tìm được người dự kiến không đồng nghĩa ca đã được bố trí hoặc yêu cầu đã hoàn tất.
+
+Mẫu báo vận hành: “YC-000123: An đã bổ sung Bình làm người dự kiến nhận thay ca [thông tin]. Yêu cầu chuyển sang chờ Bình xác nhận theo luồng nhận thay; không còn cần duyệt nghỉ. Lịch chưa thay đổi.” Nếu Bình từ chối, hết hạn hoặc không đủ điều kiện, yêu cầu chưa hoàn tất và xử lý theo ngoại lệ của luồng nhận thay.
+
+Chi tiết đề xuất: ghi lịch sử chuyển nhánh và không dùng phản hồi chấp nhận nghỉ đến muộn để phát thêm lượt tìm người cho yêu cầu đã chuyển sang nhận thay. Quy tắc chuyển nhánh khi đã bắt đầu mời đồng thời hoặc đang giữ vị trí/ghi lịch chưa được chốt bởi quyết định này.
 
 ### 3.2.1. Tìm người nhận sau chấp nhận
 
@@ -167,7 +174,7 @@ Các tên trạng thái nghiệp vụ chính kế thừa MVP. Mã máy và các 
 | NEEDS_INFO | Cần bổ sung thông tin | Thiếu hoặc chưa xác định được ca/người; bổ sung xong quay lại bước phù hợp |
 | AWAITING_SUBSTITUTE | Chờ người thay xác nhận | Đã lưu yêu cầu nhận thay hoặc hoán đổi, xác định đúng các bên và ca; chờ đủ xác nhận trực tiếp |
 | RECORDED | Đã ghi nhận | Đã lưu yêu cầu nghỉ chưa có người thay hoặc yêu cầu cần vận hành xử lý |
-| AWAITING_OPS_APPROVAL | Chờ vận hành chấp nhận | Yêu cầu nghỉ chưa có người thay đang chờ chấp nhận; chưa phát lời mời tìm người |
+| AWAITING_OPS_APPROVAL | Chờ vận hành chấp nhận | Yêu cầu nghỉ chưa có người thay đang chờ chấp nhận; chưa phát lời mời tìm người. Người gửi bổ sung người thay thì báo vận hành và chuyển AWAITING_SUBSTITUTE, không cần duyệt nghỉ |
 | SEARCHING_SUBSTITUTE | Đang tìm người nhận ca | Yêu cầu nghỉ đã được chấp nhận và chưa có người nhận đủ điều kiện; từng lời mời được theo dõi riêng |
 | SUBSTITUTE_RESERVED | Đã giữ vị trí cho người nhận | Một người xác nhận đầy đủ và đủ điều kiện đầu tiên đã được giữ vị trí; chặn người sau, chưa báo hoàn tất |
 | AWAITING_OPS | Chờ vận hành bố trí/xử lý | Vận hành cần bố trí, xử lý xung đột hoặc ngoại lệ; lý do chờ ghi riêng |
@@ -279,7 +286,8 @@ Hai khoảng giờ xung đột khi `bắt đầu A < kết thúc B` và `bắt �
 | Người nhận xác nhận có lịch bận ngoài chương trình | Chưa nhận ca; thông báo người gửi để chọn người khác hoặc chuyển vận hành |
 | Tài khoản chưa liên kết hoặc đã mất hiệu lực | Hướng dẫn liên hệ vận hành; không chấp nhận xác nhận hoặc cung cấp lịch cá nhân |
 | Người thay từ chối/không phản hồi | Thông báo người gửi; chờ chọn người khác, chuyển vận hành hoặc hủy theo quy tắc đã duyệt |
-| Nghỉ chưa được vận hành chấp nhận | Giữ chờ chấp nhận; không phát lời mời tìm người hoặc sửa phân công |
+| Nghỉ chưa được vận hành chấp nhận và vẫn chưa có người thay | Giữ chờ chấp nhận; không phát lời mời tìm người hoặc sửa phân công |
+| Người gửi bổ sung người thay khi đang chờ vận hành chấp nhận | Giữ mã, báo vận hành và chuyển sang nhận thay không cần duyệt nghỉ; chỉ sửa lịch sau xác nhận trực tiếp và kiểm tra đủ điều kiện |
 | Nhiều người đồng ý nhận cùng vị trí | Giữ vị trí cho người xác nhận đầy đủ đầu tiên đủ điều kiện; chặn người sau ngay, chỉ báo hoàn tất sau kiểm tra Sheets |
 | Ghi lịch lỗi sau khi giữ vị trí | Giữ người đã được chọn, đối chiếu/xử lý lỗi; không giao lại cho phản hồi sau khi kết quả chưa rõ |
 | Một ứng viên từ chối trong lượt mời đồng thời | Lượt tìm tiếp tục với các lời mời còn hiệu lực; không tự hủy cả yêu cầu |
@@ -303,7 +311,9 @@ Hai khoảng giờ xung đột khi `bắt đầu A < kết thúc B` và `bắt �
 | Hoán đổi chỉ cập nhật được một ca | Giữ đang cập nhật, cảnh báo vận hành và đối chiếu/phục hồi cả yêu cầu; không báo thành công hoặc tự xử lý như hai yêu cầu độc lập |
 | Yêu cầu nhiều hơn hai ca | Đề xuất chuyển vận hành cho đến khi chốt phạm vi |
 
-Đọc lại lịch trước khi ghi là điều kiện cần, chưa đủ để ngăn sửa đồng thời. Trước khi bật tự động cập nhật, thiết kế kỹ thuật phải chỉ rõ cách xử lý khi vận hành hoặc bot sửa cùng phân công giữa lúc kiểm tra và ghi. Nếu chưa bảo đảm được, giữ yêu cầu cho vận hành xử lý; không báo rằng đã tránh mọi xung đột.
+**Đã chốt:** vận hành và bot đều được cập nhật D trực tiếp. Bot đọc lại ngay trước khi ghi, kiểm tra ca/vị trí, phân công gốc, nội dung đã xác nhận và lịch liên quan của người nhận. Phát hiện thay đổi ảnh hưởng yêu cầu thì dừng ghi theo bản cũ, đối chiếu lại và thông báo; nếu đủ điều kiện thì ghi đúng D, giữ J và xác minh sau ghi.
+
+Đọc trước/đọc sau chưa ngăn được sửa đồng thời giữa hai bước, cũng không bảo đảm phát hiện thay đổi của vận hành đã bị ghi đè. Thiết kế kỹ thuật phải kiểm chứng tình huống này và đề xuất cách phối hợp trước pilot; không mặc định cấm vận hành sửa trực tiếp hoặc tuyên bố đã tránh mọi xung đột. Khi phát hiện xung đột hay kết quả chưa rõ, giữ chưa hoàn tất, đối chiếu và báo vận hành; không tự ghi lại/hoàn nguyên theo bản cũ.
 
 ## 7. Thông báo và công việc tồn đọng
 
@@ -319,6 +329,7 @@ Các ví dụ nội dung gửi cho người tạo yêu cầu, vận hành và ng
 | Đã ghi nhận/chờ bổ sung | Người gửi |
 | Người thay từ chối, hết hạn hoặc xung đột | Người gửi; vận hành khi cần xử lý |
 | Yêu cầu nghỉ cần bố trí | Danh sách vận hành phụ trách |
+| Người gửi bổ sung người thay khi đang chờ chấp nhận nghỉ | Vận hành nhận thông tin chuyển sang nhận thay; người được bổ sung nhận lời mời xác nhận trực tiếp |
 | Yêu cầu nghỉ được chấp nhận/đang tìm người | Người gửi; vận hành theo dõi trong bảng yêu cầu |
 | Ca đã có người hoặc vòng tìm bị dừng/hủy | Ứng viên còn lời mời mở; chỉ báo có người sau khi lịch đã cập nhật |
 | Thay ca hoàn tất hoặc bị hủy sau khi đã gửi lời mời | Người gửi, người thay liên quan và vận hành |
@@ -353,7 +364,11 @@ Các kịch bản này dùng để rà soát đặc tả và sau đó thử pilo
 | Người nhận có ca sáng và muốn nhận ca chiều cùng ngày | Không coi 09:00–13:00 và 14:00–18:00 là giao nhau; kiểm tra các điều kiện còn lại |
 | Một lớp có hai labcoach, một người được thay | Phân công người còn lại được giữ đúng |
 | Nghỉ chưa có người thay | Có mã theo dõi và thông báo vận hành; không nói ca đã đủ người |
-| Nghỉ chưa có người thay, vận hành chưa chấp nhận | Không phát lời mời tìm người; D giữ nguyên |
+| Nghỉ vẫn chưa có người thay, vận hành chưa chấp nhận | Không phát lời mời tìm người; D giữ nguyên |
+| An bổ sung Bình nhận thay khi yêu cầu nghỉ đang chờ vận hành chấp nhận | Giữ cùng mã, báo vận hành, chuyển chờ Bình xác nhận mà không cần duyệt nghỉ; D giữ nguyên cho tới khi Bình xác nhận đầy đủ và vượt kiểm tra |
+| Bình xác nhận đầy đủ và đủ điều kiện sau khi An bổ sung, vận hành chưa chấp nhận nghỉ | Bot cập nhật D, giữ nguyên J, đọc lại và báo hoàn tất theo luồng nhận thay |
+| Bình từ chối hoặc có lịch trùng sau khi được bổ sung | Không đổi D; yêu cầu chưa hoàn tất, thông báo người gửi theo luồng nhận thay |
+| Phản hồi chấp nhận nghỉ đến muộn sau khi yêu cầu đã chuyển sang nhận thay | Không phát lượt mời tìm người song song hoặc tạo yêu cầu thứ hai |
 | Vận hành chấp nhận nghỉ, bot tìm được người đồng ý đủ điều kiện | D cập nhật đúng người nhận; J được bot giữ nguyên; các bên nhận kết quả |
 | Vận hành đề cử người nhận nhưng người đó chưa xác nhận trực tiếp | Chưa sửa lịch và chưa hoàn tất |
 | Hai ứng viên đồng ý gần nhau | Chỉ một người nhận đúng vị trí; không ghi đè hoặc báo cả hai đã nhận thành công |
@@ -369,6 +384,8 @@ Các kịch bản này dùng để rà soát đặc tả và sau đó thử pilo
 | Phản hồi lời mời cũ sau khi đã đổi người thay/hủy | Không thay đổi lịch |
 | Hai thay đổi gần nhau có thể làm người thay trùng lịch | Chỉ thay đổi đáp ứng kiểm tra trên lịch mới nhất được thực hiện |
 | Vận hành sửa phân công trong lúc bot đang xử lý | Không ghi đè im lặng; yêu cầu được đối chiếu lại hoặc chuyển vận hành |
+| Vận hành đã đổi D trước lần kiểm tra cuối của bot | Bot phát hiện phân công gốc thay đổi; không ghi theo yêu cầu cũ, đối chiếu và thông báo |
+| Vận hành sửa D giữa lần đọc cuối và lần ghi của bot | Kiểm chứng và ghi nhận giới hạn phát hiện/ghi đè; không coi đọc lại là khóa hoặc bảo đảm tuyệt đối. Nếu phát hiện bất nhất, dừng và đối chiếu, không tự ghi lại |
 | Ghi lịch trả kết quả không rõ, sau đó sự kiện được gửi lại | Kiểm tra lịch và xác định kết quả; không thay đổi lần hai |
 | Người khác tra cứu bằng mã đoán được | Không lộ nội dung yêu cầu ngoài quyền của họ |
 | Issue không có ảnh | Vẫn tiếp nhận khi đủ phòng, mô tả và thời điểm |
@@ -388,8 +405,8 @@ Các kịch bản này dùng để rà soát đặc tả và sau đó thử pilo
 | Đã chốt tìm người và thứ tự nhận | Sau chấp nhận, mời đồng thời người hợp lệ không trùng lịch; người đủ điều kiện nhận sớm nhất được nhận, người sau không nhận cùng vị trí | Cụ thể hóa giữ vị trí, xử lý sự kiện trùng/sửa đồng thời và can thiệp khi lỗi |
 | Trước khi pilot | Người nhận, giờ tổng hợp và quy tắc việc khẩn | Chốt thông báo |
 | Trước khi pilot | Liên kết issue trùng, mở lại issue và kết quả giải quyết bắt buộc | Chốt vòng đời issue |
-| Trước khi pilot | Giữ Google Form/tin riêng hay chuyển một đầu mối | Tránh bỏ sót hoặc ghi trùng từ nhiều kênh |
-| Trước khi chọn triển khai | Kiểm tra nền tảng Zalo, lựa chọn backend/workflow, nơi lưu dữ liệu và xử lý sửa đồng thời | Thiết kế kỹ thuật dựa trên nghiệp vụ đã duyệt |
+| Đã chốt kênh tiếp nhận | Chuyển yêu cầu thông thường sang bot từ pilot; vận hành hỗ trợ khi bot lỗi hoặc có việc khẩn | Còn chuẩn bị thông báo chuyển kênh, đối chiếu yêu cầu cũ và hướng dẫn hỗ trợ |
+| Trước khi triển khai | Hermes Agent đã được chọn; kiểm tra nền tảng Zalo, chốt kiến trúc dịch vụ nghiệp vụ/tích hợp, nơi lưu dữ liệu và xử lý sửa đồng thời | Thiết kế kỹ thuật dựa trên nghiệp vụ đã duyệt |
 | Trước khi pilot | Mục tiêu và cách đo: yêu cầu bị bỏ sót, thời gian xử lý, tỷ lệ dùng bot, lượng tin gửi | Đánh giá hiệu quả và hạn mức |
 
-Trình tự tiếp theo: rà soát các ngoại lệ và chuẩn bị dữ liệu người dùng/nguồn lịch → duyệt đặc tả nghiệp vụ, xác minh khả năng nền tảng và chọn phương án kỹ thuật → triển khai, nghiệm thu và pilot. Hạn 24 giờ, xác nhận trực tiếp, bot giữ nguyên J, mời đồng thời và người nhận đủ điều kiện sớm nhất đã chốt; không đặt lại thành câu hỏi mở. Chưa có quyết định duyệt toàn bộ bản nháp hoặc bắt đầu lập trình trong tài liệu này.
+Trình tự hiện tại: bản thử cục bộ đã được xây theo quyết định được duyệt → người phụ trách nghiệm thu qua Paseo → hoàn thiện danh tính, phạm vi nguồn lịch và kết nối nền tảng → nghiệm thu và mở pilot. Hạn 24 giờ, xác nhận trực tiếp, bot giữ nguyên J, mời đồng thời và người nhận đủ điều kiện sớm nhất đã chốt; không đặt lại thành câu hỏi mở. Việc cho phép xây bản thử chưa đồng nghĩa đã nghiệm thu pilot hoặc cấp quyền ghi Sheets nguồn.
