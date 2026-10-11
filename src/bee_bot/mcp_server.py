@@ -34,12 +34,14 @@ def _schedule_context(schedule):
         synthetic = provenance["kind"] == "synthetic"
         backend = getattr(schedule, "backend_name", "sheets_adapter")
         google = backend == "google_sheets_test_copy"
+        writable = coverage["writable"] and (
+            getattr(schedule.transport, "write_scope_enabled", False) if google else True)
         return {"schedule": "google_sheets_test_copy" if google else (
                     "synthetic_sheets" if synthetic else "sheets_test_copy"),
                 "schedule_backend": backend,
                 "provenance": {"kind": provenance["kind"],
                                "owner_confirmed_copy": provenance.get("owner_confirmed_copy") is True,
-                               "scope": coverage["scope"], "writable": coverage["writable"],
+                               "scope": coverage["scope"], "writable": writable,
                                "compare_and_set": coverage["compare_and_set"]},
                 "live_integrations": True if google else (False if synthetic else None),
                 "actor_is_demo_persona": synthetic}

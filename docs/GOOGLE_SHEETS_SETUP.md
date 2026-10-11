@@ -317,6 +317,16 @@ and contains no accepted person ID or Zalo mapping. Google metadata follows
 insert/move in the synthetic trial; sort/copy-paste, concurrent edits, full
 schedule coverage and business acceptance remain unverified.
 
+The owner accepted the 51-name list as provisional on 12/10/2026. A separate
+private configuration uses one temporary inactive person ID per distinct name,
+with `write_enabled=false` and no allowed write anchors. Live adapter and
+factory reads parsed all 390 assignments with zero structural diagnostics.
+This verifies read-only wiring only. The names have not been matched to real
+people or Zalo senders, and the provisional configuration is not installed in
+the worker. `get_bot_context` now reports `writable=false` when the Google
+transport has writes disabled or no allowed anchor, even if structural coverage
+is clean.
+
 ## Offline verification
 
 From `/home/duy/VinAI/Bee_Bot`:

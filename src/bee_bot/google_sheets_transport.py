@@ -222,6 +222,11 @@ class GoogleSheetsTransport:
                 'sheet_id': self._gid, 'copy_of': self._copy_of, 'owner_confirmed_copy': True,
                 'contains_real_data': True}
 
+    @property
+    def write_scope_enabled(self):
+        """Whether this instance has any authorized D-write target."""
+        return self._write_enabled and bool(self._allowed_anchors)
+
     def _request(self, method, suffix='', **kwargs):
         private = _PRIVATE_IO.set(True)
         try:

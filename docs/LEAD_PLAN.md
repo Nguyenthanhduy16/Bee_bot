@@ -263,3 +263,12 @@ ops bổ sung mã người, liên kết Zalo, vai trò và xác thực. CSV này
 viên, chưa được dùng làm trusted roster. Worker/backend runtime vẫn khóa ghi;
 chưa nghiệm thu thao tác sort/copy-paste, sửa D đồng thời, lịch chương trình
 đầy đủ, hoán đổi nhiều ô hoặc người dùng Zalo thứ hai. Pilot vẫn đóng.
+
+Chủ dự án chấp nhận danh sách 51 tên **tạm thời** để tiếp tục kiểm thử đọc.
+Lead tạo cấu hình riêng ngoài Git với 51 mã người tạm `inactive`, `write_enabled`
+false và allowlist ghi rỗng. Adapter và factory đọc live đủ 390 phân công,
+0 diagnostic cấu trúc; cấu hình chưa được cài vào worker. Đây chưa phải xác
+thực danh tính người hoặc liên kết Zalo. Khi rà soát context MCP, phát hiện
+`writable` trước đó chỉ phản ánh cấu trúc, có thể báo true dù transport khóa
+ghi. Đã sửa context Google để yêu cầu thêm cổng ghi và anchor allowlist của
+transport; 219 test MCP/transport/factory đạt, bỏ 1 stdio test treo đã biết.

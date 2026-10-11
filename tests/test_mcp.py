@@ -439,6 +439,24 @@ def google_mcp(env, monkeypatch, tmp_path, default_servers):
     client.close()
 
 
+@pytest.mark.parametrize("write_enabled,anchors", [(False, ["anc-001"]), (True, [])])
+def test_google_context_reports_transport_write_gate(google_mcp, monkeypatch, default_servers, write_enabled, anchors):
+    config = {**google_mcp["config"], "write_enabled": write_enabled, "allowed_write_anchors": anchors}
+    with open(os.environ["BEE_BOT_SHEETS_CONFIG"], "w", encoding="utf-8") as handle:
+        json.dump(config, handle)
+    monkeypatch.setenv("BEE_BOT_ACTOR_ID", "chi")
+    server = create_server()
+
+    async def read():
+        context = mcp_payload(await server.call_tool("get_bot_context", {}))["result"]
+        assert context["schedule_backend"] == "google_sheets_test_copy"
+        assert context["provenance"]["writable"] is False
+        assert context["live_integrations"] is True
+
+    asyncio.run(read())
+    assert google_mcp["writes"] == []
+
+
 @pytest.mark.parametrize("overlap", [False, True])
 def test_actual_google_factory_service_default_mcp_replacement(google_mcp, monkeypatch, default_servers, overlap):
     state = google_mcp
