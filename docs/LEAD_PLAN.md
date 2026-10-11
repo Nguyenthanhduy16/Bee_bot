@@ -272,3 +272,19 @@ thực danh tính người hoặc liên kết Zalo. Khi rà soát context MCP, p
 `writable` trước đó chỉ phản ánh cấu trúc, có thể báo true dù transport khóa
 ghi. Đã sửa context Google để yêu cầu thêm cổng ghi và anchor allowlist của
 transport; 219 test MCP/transport/factory đạt, bỏ 1 stdio test treo đã biết.
+
+## Checkpoint Zalo với bạn giả lập Hermes — 12/10/2026
+
+Một tài khoản Zalo của chủ dự án đã thử vai `duy` trên lịch JSON cô lập;
+`binh` là persona Hermes riêng dùng cùng DB. Worker Zalo cũ đang dừng nên tin
+gửi trước khi mở lượt thử không vào inbox cục bộ. Sau khi gửi lại, bot hỏi xác
+nhận, nhận xác nhận của chủ dự án và tạo yêu cầu thay A001. Bình giả lập gọi
+MCP xác nhận trực tiếp; yêu cầu hoàn tất, A001 chuyển `duy` → `binh`, revision
+tăng 1 và J giữ nguyên. Inbox thử có 2 `completed`, giao nhận có 4 `sent`,
+không có mục `uncertain`; worker thử đã kết thúc. Chi tiết bằng chứng và giới
+hạn ở [nghiệm thu Zalo](ZALO_TWO_SENDER_ACCEPTANCE.md#7-lượt-thử-một-người-zalo-và-bạn-giả-lập-hermes--12102026).
+
+Lượt này chứng minh một người thật trên Zalo phối hợp với một người giả lập qua
+Hermes trên lịch JSON. Nó chưa chứng minh hai người Zalo thật, vận hành thường
+trực hoặc ghi Sheets từ bot. Pilot vẫn đóng; danh sách người trên Sheets còn
+tạm và chưa xác thực liên kết Zalo.

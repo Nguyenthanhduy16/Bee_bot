@@ -147,3 +147,35 @@ Worker **không** tự đặt lại hoặc phát lại các mục này.
 - Session đã lưu nhưng bị **chứng minh** không còn (DB Hermes đọc được, không có dòng session): bắt đầu session mới **trước** khi chạy model, và kết quả ghi `session_recovered`. DB thiếu, hỏng hoặc không có bảng → dừng, ghi `uncertain` với `stage=session` và `model_may_have_run=false`. Không bao giờ chạy lại lượt model đã bắt đầu.
 - Trong profile Zalo (`BEE_BOT_CHANNEL=zalo`), thao tác thay đổi qua MCP cần event ID `zalo:<sha256>` do worker cung cấp. Thao tác **đọc** vẫn chạy với actor có trong môi trường. Hermes Desktop mở `bee-zalo` mà không có worker sẽ không có actor hợp lệ (`INVALID_ACTOR`).
 - J vẫn nằm trong snapshot yêu cầu trả cho chủ yêu cầu/vận hành qua MCP, tức đi qua provider model. Với Sheets thật, cần quyết định riêng.
+
+## 7. Lượt thử một người Zalo và bạn giả lập Hermes — 12/10/2026
+
+Đây là **lượt thử hỗn hợp**, không thay cho nghiệm thu hai tài khoản Zalo thật ở
+mục 4. Một tài khoản Zalo của chủ dự án đóng vai thử `duy`; Bình là persona
+`binh` trong profile Hermes riêng. Hai vai dùng chung lịch JSON và SQLite thử
+cô lập tại `.bee-bot/duy-binh-hermes-demo/`. Google Sheets không nằm trong đường
+ghi của lượt này; danh sách tên tạm trên Sheets không được dùng để cấp quyền.
+
+Profile Zalo `bee-zalo-duy-binh-test` được tạo riêng vì `bee-zalo` cũ ghim vào
+state dir và vai thử An. Profile bạn giả lập là `bee-bot-binh-duy-test`. Không
+tạo thêm tài khoản bot Zalo; cả hai profile Hermes dùng công cụ Bee Bot với
+actor cố định trong cấu hình tin cậy. Không đưa tệp ánh xạ sender, token hoặc
+profile runtime vào Git.
+
+Worker vốn đã dừng trước lượt thử. Tin đầu tiên gửi khi worker dừng không có
+trong inbox cục bộ. Sau khi mở worker thử, chủ dự án gửi lại câu nhờ thay ca
+A001; bot hỏi xác nhận rồi nhận câu xác nhận thứ hai. Đối chiếu DB chỉ đọc sau
+hai lượt: `zalo_inbox` có **2 completed**, `zalo_deliveries` có **4 sent**, không
+có `uncertain`. `sent` là kết quả API, chưa chứng minh người dùng đã đọc.
+
+Yêu cầu `YC-ec46bdc3d7a2` được tạo ở trạng thái `waiting_confirmation`.
+Hermes trong phiên Bình đã gọi `get_bot_context`, `get_my_invitations`,
+`respond_to_invitation` và `get_request_status`; nhân vật giả lập xác nhận
+đồng ý nhận và không bận ngoài chương trình. Đọc lại trạng thái cho thấy yêu
+cầu `completed`, A001 chuyển từ `duy` sang `binh`, revision từ 1 lên 2, J giữ
+nguyên. Thông báo hoàn tất được đẩy từ outbox thử về chat Zalo đã liên kết;
+không gửi cho tài khoản thứ hai nào. Worker thử kết thúc sau hai tin và hiện
+không phải service chạy thường trực.
+
+Giới hạn còn lại: chưa có phản hồi của một người nhận Zalo thật, chưa thử
+hoán đổi/nghỉ/issue qua hai tài khoản thật, và chưa ghi Sheets qua luồng này.
