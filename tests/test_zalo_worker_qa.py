@@ -32,6 +32,9 @@ def test_sender_conversations_remain_separate_across_worker_restart(tmp_path):
         def __init__(self):
             self.calls = []
 
+        def prepare_profile(self):
+            return "bee-zalo"
+
         def reply(self, actor, incoming, session_id):
             self.calls.append((actor, session_id))
             return {"text": "Demo response", "session_id": session_id or f"session-{actor}"}
@@ -58,6 +61,35 @@ def test_sender_conversations_remain_separate_across_worker_restart(tmp_path):
     assert runner.calls == [("an", None), ("binh", None), ("an", "session-an"), ("binh", "session-binh")]
 
 
+def test_shared_profile_rejects_same_session_id_for_two_senders(tmp_path):
+    class Service:
+        def get_my_assignments(self, actor):
+            return []
+        def get_my_notifications(self, actor):
+            return []
+
+    class Runner:
+        def prepare_profile(self):
+            return "bee-zalo"
+        def reply(self, actor, incoming, session_id):
+            return {"text": "Demo response", "session_id": "same-session"}
+
+    client = Client()
+    ingress = ZaloIngress(tmp_path / "inbox.db", identities={"sender-an": "an", "sender-binh": "binh"}, webhook_secret="test-secret")
+    worker = PollingWorker(client, ingress, Runner(), Service())
+    client.payload = event("an-1", "sender-an")
+    worker.once()
+    client.payload = event("binh-1", "sender-binh")
+    client.payload["message"]["chat"]["id"] = "chat-binh"
+    worker.once()
+    with worker.db() as db:
+        assert db.execute("SELECT sender,session FROM zalo_shared_sessions ORDER BY sender").fetchall() == [
+            ("sender-an", "same-session"), ("sender-binh", None)]
+        assert db.execute("SELECT status FROM zalo_inbox ORDER BY rowid").fetchall() == [
+            ("completed",), ("uncertain",)]
+    assert len(client.sent) == 1
+
+
 def test_uncertain_delivery_is_not_repeated_after_restart(tmp_path):
     from test_zalo_worker import worker
 
@@ -77,8 +109,9 @@ def test_bridge_profile_explicitly_passes_event_id_through_hermes_safe_env(tmp_p
     from test_zalo_worker import source_profile
 
     source_profile(tmp_path)
-    HermesRunner(tmp_path).prepare_profile("an")
-    config = yaml.safe_load((tmp_path / "bee-zalo-an/config.yaml").read_text())
+    HermesRunner(tmp_path).prepare_profile()
+    config = yaml.safe_load((tmp_path / "bee-zalo/config.yaml").read_text())
     # Hermes strips arbitrary parent variables; an explicit interpolation is required.
     assert config["mcp_servers"]["bee_bot"]["env"]["BEE_BOT_EVENT_ID"] == "${BEE_BOT_EVENT_ID}"
-    assert config["mcp_servers"]["bee_bot"]["env"]["BEE_BOT_ACTOR_ID"] == "an"
+    assert config["mcp_servers"]["bee_bot"]["env"]["BEE_BOT_ACTOR_ID"] == "${BEE_BOT_ACTOR_ID}"
+    assert config["mcp_servers"]["bee_bot"]["env"]["BEE_BOT_ZALO_DISPLAY_NAME"] == "${BEE_BOT_ZALO_DISPLAY_NAME}"

@@ -20,6 +20,9 @@ import httpx
 from .errors import BeeBotError
 
 
+logger = logging.getLogger(__name__)
+
+
 class _TokenRedactor(logging.Filter):
     def __init__(self, token):
         super().__init__()
@@ -129,6 +132,7 @@ class IncomingText:
     message_id: str
     text: str
     received_at: str | None
+    display_name: str | None = None
 
 
 def parse_update(payload: dict) -> IncomingText:
@@ -163,7 +167,14 @@ def parse_update(payload: dict) -> IncomingText:
             received_at = datetime.fromtimestamp(date / 1000, timezone.utc).isoformat()
         except (OverflowError, OSError, ValueError):
             raise BeeBotError("ZALO_INVALID_UPDATE", "Thời gian tin nhắn Zalo không hợp lệ.") from None
-    return IncomingText(event_id, sender_id, chat_id, message_id, text, received_at)
+    display_name = sender.get("display_name")
+    if isinstance(display_name, str):
+        display_name = " ".join(display_name.split())
+        if not 1 <= len(display_name) <= 80 or not display_name.isprintable():
+            display_name = None
+    else:
+        display_name = None
+    return IncomingText(event_id, sender_id, chat_id, message_id, text, received_at, display_name)
 
 
 class ZaloIngress:
@@ -215,7 +226,13 @@ class ZaloIngress:
             db.execute("BEGIN IMMEDIATE")
             old = db.execute("SELECT actor_id,payload,status FROM zalo_inbox WHERE event_id=?", (event.event_id,)).fetchone()
             if old:
-                if old[:2] != (actor_id, encoded):
+                previous = json.loads(old[1])
+                current = asdict(event)
+                # A display name is presentation data and may change between
+                # deliveries of the same message. It does not define identity.
+                previous.pop("display_name", None)
+                current.pop("display_name", None)
+                if old[0] != actor_id or previous != current:
                     raise BeeBotError("EVENT_CONFLICT", "Mã sự kiện trùng nhưng dữ liệu hoặc danh tính không khớp.")
                 return {"event_id": event.event_id, "status": old[2], "duplicate": True}
             db.execute("INSERT INTO zalo_inbox VALUES (?,?,?,'pending',NULL)", (event.event_id, actor_id, encoded))
@@ -238,11 +255,18 @@ class ZaloIngress:
         try:
             result = handler(row[0], event)
             encoded = json.dumps(result, ensure_ascii=False)
-        except Exception:
+        except Exception as exc:
             # Handler may already have committed a schedule mutation. Never replay blindly.
+            # Keep only a redacted stage/code; a model that may have run is never called effect-free.
+            diagnostic = {"stage": getattr(exc, "stage", "handler"),
+                          "error": exc.code if isinstance(exc, BeeBotError) else type(exc).__name__,
+                          "model_may_have_run": getattr(exc, "model_may_have_run", True)}
+            logger.warning("Sự kiện Zalo %s chưa rõ kết quả ở bước %s (%s); không tự phát lại.",
+                           event_id[:17], diagnostic["stage"], diagnostic["error"])
             with self._connect() as db:
-                db.execute("UPDATE zalo_inbox SET status='uncertain' WHERE event_id=?", (event_id,))
-            return {"event_id": event_id, "status": "uncertain", "requires_reconciliation": True}
+                db.execute("UPDATE zalo_inbox SET status='uncertain',result=? WHERE event_id=?",
+                           (json.dumps({"diagnostic": diagnostic}), event_id))
+            return {"event_id": event_id, "status": "uncertain", "requires_reconciliation": True, "diagnostic": diagnostic}
         with self._connect() as db:
             db.execute("UPDATE zalo_inbox SET status='completed',result=? WHERE event_id=?", (encoded, event_id))
         return {"event_id": event_id, "status": "completed", "result": result, "duplicate": False}

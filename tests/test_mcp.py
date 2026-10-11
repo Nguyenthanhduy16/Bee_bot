@@ -42,6 +42,85 @@ def test_mcp_cannot_start_with_invalid_demo_actor(env, actor):
         create_server(env.service, actor)
 
 
+def test_shared_profile_actor_context_is_fixed_per_mcp_process(env, monkeypatch):
+    async def context(server):
+        result = await server.call_tool("get_bot_context", {})
+        payload = result[1] if isinstance(result, tuple) else result
+        return json.loads(payload[0].text)["result"]["actor"]["person_id"]
+
+    monkeypatch.setenv("BEE_BOT_ACTOR_ID", "an")
+    an_server = create_server(env.service)
+    monkeypatch.setenv("BEE_BOT_ACTOR_ID", "binh")
+    binh_server = create_server(env.service)
+    assert asyncio.run(context(an_server)) == "an"
+    assert asyncio.run(context(binh_server)) == "binh"
+    assert asyncio.run(context(an_server)) == "an"
+    monkeypatch.setenv("BEE_BOT_ACTOR_ID", "${BEE_BOT_ACTOR_ID}")
+    with pytest.raises(BeeBotError):
+        create_server(env.service)
+
+
+def test_zalo_display_name_is_separate_from_demo_actor(env, monkeypatch):
+    monkeypatch.setenv("BEE_BOT_ACTOR_ID", "an")
+    monkeypatch.setenv("BEE_BOT_ZALO_DISPLAY_NAME", "Duy Nguyễn")
+    server = create_server(env.service)
+    async def context():
+        result = await server.call_tool("get_bot_context", {})
+        payload = result[1] if isinstance(result, tuple) else result
+        return json.loads(payload[0].text)["result"]
+    value = asyncio.run(context())
+    assert value["actor"]["person_id"] == "an"
+    assert value["zalo_display_name"] == "Duy Nguyễn"
+    assert value["actor_is_demo_persona"] is True
+
+
+@pytest.mark.parametrize("tool,args", [("reconcile_request", {"request_id": "request"}),
+                                       ("run_maintenance", {})])
+@pytest.mark.parametrize("event", [None, "", "${BEE_BOT_EVENT_ID}", "zalo:bad", "adapter:untrusted"])
+def test_recovery_tools_reject_invalid_zalo_context_before_service(env, monkeypatch, tool, args, event):
+    monkeypatch.setenv("BEE_BOT_CHANNEL", "zalo")
+    if event is None:
+        monkeypatch.delenv("BEE_BOT_EVENT_ID", raising=False)
+    else:
+        monkeypatch.setenv("BEE_BOT_EVENT_ID", event)
+    calls = []
+    monkeypatch.setattr(env.service, tool, lambda *a, **kw: calls.append((a, kw)))
+
+    async def invoke():
+        result = await create_server(env.service, "ops").call_tool(tool, args)
+        content = result[1] if isinstance(result, tuple) else result
+        return json.loads(content[0].text)
+
+    assert asyncio.run(invoke())["error"] == "EVENT_CONTEXT_REQUIRED"
+    assert calls == []
+
+
+@pytest.mark.parametrize("channel", ["zalo", "local"])
+@pytest.mark.parametrize("tool,args", [("reconcile_request", {"request_id": "request"}),
+                                       ("run_maintenance", {})])
+def test_recovery_tools_forward_without_injecting_event_id(env, monkeypatch, channel, tool, args):
+    monkeypatch.setenv("BEE_BOT_CHANNEL", channel)
+    if channel == "zalo":
+        monkeypatch.setenv("BEE_BOT_EVENT_ID", "zalo:" + "a" * 64)
+    else:
+        monkeypatch.delenv("BEE_BOT_EVENT_ID", raising=False)
+    calls = []
+
+    def recover(actor, **kwargs):
+        calls.append((actor, kwargs))
+        return {"status": "checked"}
+
+    monkeypatch.setattr(env.service, tool, recover)
+
+    async def invoke():
+        result = await create_server(env.service, "ops").call_tool(tool, args)
+        content = result[1] if isinstance(result, tuple) else result
+        return json.loads(content[0].text)
+
+    assert asyncio.run(invoke()) == {"ok": True, "result": {"status": "checked"}}
+    assert calls == [("ops", args)]
+
+
 def test_real_stdio_transport_fixed_actor_tools_and_permission_errors(env):
     # This starts actual MCP subprocesses; no model, Hermes, Paseo or live integrations.
     # The subprocess uses its real clock; move fixture dates into its future.

@@ -4,6 +4,7 @@ import logging
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -45,10 +46,25 @@ def create_server(service=None, actor_id=None):
             logger.error("Bee Bot tool %s failed (%s)", method, type(exc).__name__)
             return {"ok": False, "error": "INTERNAL_ERROR", "message": "Không xử lý được yêu cầu; vận hành cần kiểm tra trước khi thử lại."}
 
-    def mutate(method, **kwargs):
+    def event_context_error():
         external_event = os.environ.get("BEE_BOT_EVENT_ID")
+        # Every state-changing Zalo tool needs the worker's event context,
+        # including reconciliation/maintenance that only read Sheets.
+        if os.environ.get("BEE_BOT_CHANNEL") == "zalo" and not re.fullmatch(r"zalo:[0-9a-f]{64}", external_event or ""):
+            return {"ok": False, "error": "EVENT_CONTEXT_REQUIRED", "message": "Thiếu mã sự kiện xác thực từ adapter; chưa thực hiện thao tác."}
         if external_event and "${" in external_event:
             return {"ok": False, "error": "EVENT_CONTEXT_REQUIRED", "message": "Thiếu mã sự kiện xác thực từ adapter; chưa thực hiện thao tác."}
+        return None
+
+    def state_call(method, **kwargs):
+        error = event_context_error()
+        return error if error else call(method, **kwargs)
+
+    def mutate(method, **kwargs):
+        error = event_context_error()
+        if error:
+            return error
+        external_event = os.environ.get("BEE_BOT_EVENT_ID")
         if external_event:
             identity = json.dumps([external_event, method, kwargs], ensure_ascii=False, sort_keys=True, separators=(",", ":"))
             event_id = "adapter:" + hashlib.sha256(identity.encode()).hexdigest()
@@ -64,7 +80,11 @@ def create_server(service=None, actor_id=None):
                             if entry["person_id"] == actor_id and entry.get("active")), None)
             if current is None:
                 raise BeeBotError("INVALID_ACTOR", "Danh tính thử không tồn tại hoặc đã ngừng hoạt động.")
-            return {"ok": True, "result": {"actor": current, "schedule": "fake_json", "notifications": "durable_fake_outbox", "live_integrations": False}}
+            display_name = os.environ.get("BEE_BOT_ZALO_DISPLAY_NAME", "")
+            if display_name.startswith("${") or not 1 <= len(display_name) <= 80 or not display_name.isprintable():
+                display_name = None
+            return {"ok": True, "result": {"actor": current, "schedule": "fake_json", "notifications": "durable_fake_outbox", "live_integrations": False,
+                                           "zalo_display_name": display_name, "actor_is_demo_persona": True}}
         except BeeBotError as exc:
             return exc.as_dict()
         except Exception as exc:
@@ -135,7 +155,7 @@ def create_server(service=None, actor_id=None):
     @mcp.tool()
     def reconcile_request(request_id: str) -> dict:
         """Ops reads actual schedule results after uncertain writes. Never blindly retries or rolls back."""
-        return call("reconcile_request", request_id=request_id)
+        return state_call("reconcile_request", request_id=request_id)
 
     @mcp.tool()
     def create_issue(room: str, description: str, detected_at: str, photo: str | None = None,
@@ -162,7 +182,7 @@ def create_server(service=None, actor_id=None):
     @mcp.tool()
     def run_maintenance() -> dict:
         """Ops expires invitations, flags urgent requests, produces due summaries and safely reconciles writes."""
-        return call("run_maintenance")
+        return state_call("run_maintenance")
 
     return mcp
 

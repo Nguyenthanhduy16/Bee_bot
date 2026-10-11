@@ -119,6 +119,23 @@ def test_update_normalization():
     assert first == second
     assert first.event_id.startswith("zalo:")
     assert first.received_at.endswith("+00:00")
+    assert first.display_name == "Vận hành"
+
+
+def test_display_name_is_presentation_only_and_duplicate_may_change_name(tmp_path):
+    adapter = ingress(tmp_path)
+    first = update()
+    first["result"]["message"]["from"]["display_name"] = "  Duy  Nguyễn  "
+    incoming = adapter.receive_polled(first)
+    seen = []
+    adapter.process(incoming["event_id"], lambda actor, event: seen.append((actor, event.display_name)) or {"ok": True})
+    assert seen == [("an", "Duy Nguyễn")]
+    duplicate = update()
+    duplicate["result"]["message"]["from"]["display_name"] = "Tên mới"
+    assert adapter.receive_polled(duplicate)["duplicate"] is True
+    unsafe = update()
+    unsafe["result"]["message"]["from"]["display_name"] = "x" * 81
+    assert parse_update(unsafe).display_name is None
 
 
 def test_auth_checked_before_payload_parsing(tmp_path):

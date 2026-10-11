@@ -44,6 +44,8 @@ Chat riêng Zalo → Bot API polling/webhook → xác thực sender ID
 
 Từng người nhận thay phải xác nhận từ tài khoản Zalo đã liên kết chính họ. Tên hiển thị hay câu “tôi là vận hành” không cấp quyền. Danh sách sender ID → person ID do chủ nghiệp vụ xác nhận; role lấy từ danh mục người của hệ thống.
 
+Tên hiển thị trong `message.from.display_name` dùng để xưng hô, theo [payload Zalo Bot](https://docs.zaloplatforms.com/docs/BOT/webhook). Trong bản thử, tài khoản chủ bot đang liên kết với vai dữ liệu giả `an`; bot không được gọi chủ tài khoản là An như một danh tính thật. Nếu thiếu tên hiển thị, bot gọi “bạn”.
+
 Thử đầu tiên nên dùng **long polling tại máy** với lịch giả và Hermes thật, không cần public domain/tunnel. API chính thức `getUpdates` dành cho development và không hoạt động khi bot đã có webhook. Không xóa webhook tự động của bot có sẵn. [getUpdates](https://bot.zapps.me/docs/apis/getUpdates/)
 
 Pilot chạy liên tục sau đó dùng webhook HTTPS công khai, xác thực header secret, lưu bền và worker riêng. Endpoint HTTP nhận đã được kiểm thử local; chưa được đăng ký với Zalo. [Webhook](https://docs.zaloplatforms.com/docs/BOT/webhook), [setWebhook](https://bot.zapps.me/docs/apis/setWebhook/)
@@ -78,8 +80,10 @@ Helper chỉ liên kết nếu nội dung tin khớp mã riêng; tin bất kỳ 
 .venv/bin/python -m bee_bot.zalo_worker --env-file .bee-bot/zalo.env --state-dir .bee-bot/zalo-demo
 ```
 
-Lần thử Zalo đầu dùng lịch giả mới tại `.bee-bot/zalo-demo`, tách dữ liệu các phiên Paseo trước đó để không gửi lại thông báo lịch sử. Tài khoản chủ bot đã liên kết với vai labcoach thử `an`; mã liên kết đã bị loại bỏ sau khi dùng. Đây chưa phải danh tính labcoach production. Worker local đang chạy; máy cần tiếp tục hoạt động và có mạng. Webhook URL trong Creator để trống khi chạy polling. URL webhook public chỉ được điền sau khi có backend HTTPS đã triển khai và kiểm chứng.
+Lần thử Zalo đầu dùng lịch giả mới tại `.bee-bot/zalo-demo`, tách dữ liệu các phiên Paseo trước đó để không gửi lại thông báo lịch sử. Tài khoản chủ bot đã liên kết với vai labcoach thử `an`; mã liên kết đã bị loại bỏ sau khi dùng. Đây chưa phải danh tính labcoach production. Worker local cần được khởi chạy khi thử; máy cần tiếp tục hoạt động và có mạng. Webhook URL trong Creator để trống khi chạy polling. URL webhook public chỉ được điền sau khi có backend HTTPS đã triển khai và kiểm chứng.
 
-Trong Hermes Desktop, chọn profile `bee-zalo-an` ở dãy ô phía trái dưới. Phiên **Xem lịch cá nhân** đã được ghim và có nguồn `zalo`, hiện trong cây dự án. Lỗi ban đầu do runner chạy một lượt bị Hermes gắn nguồn `oneshot`, là loại bị ẩn trong cây dự án; runner hiện truyền `--source zalo` rõ ràng. Phiên cũ được sửa riêng đúng một trường nguồn sau khi dừng worker, sao lưu SQLite và kiểm tra 8 thông điệp giữ nguyên; worker đã chạy lại. API giao diện xác nhận phiên hiển thị và `pinned=true`. Đây là cuộc hội thoại gốc, không phải bản sao nhập từ export.
+Phiên **Xem lịch cá nhân** đã nghiệm thu nằm trong profile cũ `bee-zalo-an`, được ghim và có nguồn `zalo` trong Hermes Desktop. Lỗi ban đầu do runner chạy một lượt bị Hermes gắn nguồn `oneshot`, là loại bị ẩn trong cây dự án; runner truyền `--source zalo` rõ ràng. Bản mã mới tạo một profile `bee-zalo` dùng chung và giữ nguyên profile/phiên cũ. Khi chạy worker mới, cuộc chat Zalo tiếp theo bắt đầu session mới dưới profile chung; không chuyển transcript cũ sang profile mới. Trước khi khởi chạy bản mới trên máy đang phục vụ bot, dừng worker cũ và kiểm tra ánh xạ danh tính.
+
+Đợt thử profile chung ngày 11/10/2026 chạy bằng user systemd service tạm `bee-bot-zalo.service`, không có unit cài để tự bật sau khi khởi động lại máy. Kiểm tra hoặc dừng bằng `systemctl --user status bee-bot-zalo.service` và `systemctl --user stop bee-bot-zalo.service`. Không chạy thêm worker thủ công trên cùng `.bee-bot/zalo-demo` khi service đang hoạt động; file lock sẽ từ chối tiến trình thứ hai.
 
 Trang giá chính thức tại thời điểm kiểm tra mô tả Basic miễn phí, tối đa 3 bot, 50 người/bot và 3.000 tin/tháng; đây là thông tin có thể đổi và cần kiểm tra lại trước pilot. Quota không phải cam kết rằng mọi cuộc chat đều được giao. [Trang Bot Platform](https://bot.zapps.me/)

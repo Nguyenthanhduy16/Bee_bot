@@ -165,7 +165,14 @@ Sau khi cấu hình và liên kết, kiểm tra API rồi chạy worker với l�
   --env-file .bee-bot/zalo.env --state-dir .bee-bot/zalo-demo
 ```
 
-Worker đọc tệp env khi có `--env-file`, tạo profile `bee-zalo-<actor>`, giữ session theo sender và lưu trạng thái giao nhận. Worker dừng nếu webhook đang hoạt động hoặc profile Zalo có cấu hình khác. Người thử cần nhắn bot để xác minh chat nhận thông báo. Trạng thái `sent` nghĩa API xác nhận gửi.
+Worker đọc tệp env khi có `--env-file`, tạo một profile `bee-zalo` dùng chung và giữ session riêng theo sender. Danh tính được lấy từ liên kết Zalo đã xác thực, truyền vào từng lần chạy Hermes để MCP kiểm tra quyền; tên hoặc vai tự khai trong chat không cấp quyền. Khi chuyển từ profile `bee-zalo-<actor>` cũ, session cũ được giữ nguyên để tra cứu và mỗi sender bắt đầu session mới trong profile chung. Worker dừng nếu webhook đang hoạt động hoặc profile Zalo có cấu hình khác. Người thử cần nhắn bot để xác minh chat nhận thông báo. Trạng thái `sent` nghĩa API xác nhận gửi.
+Tên hiển thị Zalo chỉ dùng để xưng hô; tên persona trong lịch JSON là vai thử, không phải danh tính thật của người đang chat.
+
+Profile `bee-zalo` cần worker truyền actor/event/tên hiển thị cho từng tin. Mở lịch sử phiên trong ứng dụng Hermes để xem được, nhưng nhắn tiếp trực tiếp tại đó không có danh tính Zalo và có thể làm MCP báo `INVALID_ACTOR`. Kiểm tra danh tính bằng tin mới gửi từ Zalo. Worker chấp nhận metadata phiên bản và endpoint/chế độ API Hermes tự bổ sung nếu khớp cấu hình model gốc; thay đổi actor, đường dẫn dữ liệu hoặc công cụ vẫn bị từ chối.
+
+Session do worker tạo có tiêu đề `Zalo · <tên hiển thị> — <nội dung hội thoại>` để danh sách và đầu khung chat Hermes nhận diện người nhắn. Tên mới cập nhật theo tin Zalo; nếu thiếu tên, giữ tên đã nhận trước đó hoặc dùng nhãn người dùng ổn định. Metadata hiển thị lưu trong DB profile riêng, không thay đổi quyền hoặc định tuyến chat. Lỗi cập nhật nhãn không làm mất phản hồi và không tự phát lại thao tác nghiệp vụ.
+
+Profile chung chỉ tải toolset `bee_bot`; skill chung và bộ nhớ tự động không được nạp. Hướng dẫn nghiệp vụ nằm trong SOUL quản lý. Worker kiểm tra config/SOUL trước khi nhận tin; profile cũ cần chuyển đổi tường minh bằng `.venv/bin/python -m bee_bot.zalo_worker --migrate-profile --state-dir .bee-bot/zalo-demo` (sao lưu hai file, không gọi Zalo/model). Xem [nghiệm thu hai sender](docs/ZALO_TWO_SENDER_ACCEPTANCE.md) trước lượt thử tiếp theo.
 
 ### Webhook nhận cục bộ
 
@@ -208,6 +215,7 @@ Lệnh `worker` của CLI phục vụ bảo trì nghiệp vụ; `bee_bot.zalo_wo
 Bộ kiểm thử bao gồm nghiệp vụ, phân quyền, chống lặp, cạnh tranh nhận ca, lỗi ghi một phần, phục hồi sau restart, MCP stdio, importer, webhook, polling, onboarding và nội dung thông báo. Các kiểm thử tự động dùng dữ liệu giả và mock transport/model, không gọi Zalo hoặc Google Sheets thật.
 
 [Báo cáo nghiệm thu ngày 10/10/2026](docs/ACCEPTANCE_REPORT_V1.md) ghi nhận **140 test đạt**, thử đủ 5 luồng qua Hermes/Paseo trên lịch giả và một lượt tra lịch qua Zalo thật được API xác nhận gửi phản hồi.
+[Mốc profile Hermes chung ngày 11/10/2026](docs/SHARED_HERMES_PROFILE_2026-10-11.md) ghi nhận một lượt tra lịch thật qua profile `bee-zalo` và xác nhận người dùng đã nhìn thấy phản hồi.
 
 ## Cấu trúc repository
 
