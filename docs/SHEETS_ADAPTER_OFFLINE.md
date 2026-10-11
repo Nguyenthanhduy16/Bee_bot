@@ -116,7 +116,7 @@ Tests: `.venv/bin/python -m pytest -q tests/test_sheets_adapter_core.py`.
 
 ## 7. Blocked only for the real pilot
 
-- Live access to the owner-authorized test workbook: credentials and access configuration outside Git, the exact tab(s) to integrate, and the allowlist/denylist configured to match the owner's designation (Lead is handling workbook read/access).
+- Access to the authorized test workbook is established for the observed tab. Runtime configuration still needs the approved full tab catalogue, trusted roster, anchor map and allowlist before the bot can use it.
 - The real anchor mechanism (developer metadata or an ID column) and consent from the Sheets owner, verified on the copy.
 - Roster details: a mapping from D names to verified person IDs, ops/roles and active status, and the policy for people with the same name.
 - The catalogue of tabs and schedule periods for cross-tab overlap checks.
@@ -126,7 +126,7 @@ Tests: `.venv/bin/python -m pytest -q tests/test_sheets_adapter_core.py`.
 
 ## 8. Admin probe: one D cell on the owner-authorized test copy
 
-`scripts/sheets_copy_probe.py` is a bounded admin probe that uses the official REST endpoints `GET` and `PUT https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}` (`spreadsheets.values/get` and `spreadsheets.values/update`). It is **not** wired to the bot, the MCP server, the CLI or the default schedule. All development and tests used `httpx.MockTransport` (`tests/test_sheets_copy_probe.py`); no network request was sent. Running it live is done by Lead only.
+`scripts/sheets_copy_probe.py` is a bounded admin probe that uses the official REST endpoints `GET` and `PUT https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}` (`spreadsheets.values/get` and `spreadsheets.values/update`). It is **not** wired to the bot, the MCP server, the CLI or the default schedule. Development tests used `httpx.MockTransport` (`tests/test_sheets_copy_probe.py`). Lead ran the probe live on the authorized copy on 11/10/2026; see [`GOOGLE_SHEETS_SETUP.md`](GOOGLE_SHEETS_SETUP.md) for the bounded result.
 
 **Inputs.**
 - **Config:** the private config `.bee-bot/pilot-inputs.json` (ignored by Git), fields under `sheets`.
@@ -181,7 +181,7 @@ After any uncertain, rejected or unexpected outcome the probe does **not** resto
 - **No compare-and-set.** An edit by ops between the last GET and the PUT is overwritten without detection (`test_LIMITATION_no_cas_edit_between_get_and_put_is_overwritten`).
 - **Self-healing between reads.** A concurrent edit that reverts itself between two GETs is not seen.
 - **Scope of proof.** A single-cell test does not verify stable anchors, roster mapping, merged-cell semantics or multi-cell (swap) behaviour. It shows only that one RAW D write on the copy works and stays scoped.
-- **Real API behaviour unverified.** Behaviour on real errors, quotas and timeouts is mocked only and has not been verified live.
+- **Real error behaviour unverified.** Normal GET/PUT/restore succeeded on the copy; quotas, timeouts and error responses are still covered only by mocks.
 
 ## 9. QA-SHEETS repair (S1–S8), pending Lead acceptance
 
@@ -219,8 +219,11 @@ The owner gate `_check_google_copy` runs twice, first on the config-derived prov
 
 **Mock tests are not live acceptance.** `tests/test_schedule_factory.py` covers JSON selection, the fail-closed backend and config checks, the owner gate, and a Google construction path with a substituted transport. `tests/test_google_sheets_transport.py` and the Google MCP test in `tests/test_mcp.py` drive the real transport class with injected credentials and `httpx.MockTransport`, so every HTTP response is fabricated locally. None of this is live acceptance:
 
-- No Google credential has been supplied, and no request has ever been sent to `sheets.googleapis.com` from this repository.
+- A dedicated service-account credential is now present outside Git. Lead ran bounded live GET/PUT checks on the authorized copy, separate from these mock tests.
 - The developer-metadata anchor key and its per-row values are not ops-approved, so stable identity on the real copy is unverified.
-- Live reads, coverage, quota, latency and real error behaviour on the authorized copy remain unproven, and `production_ready` stays false.
+- One live A–J read covered the 390 observed positions and took about 0.65 seconds. Quota, sustained latency, real error behaviour and full program coverage remain unproven; `production_ready` stays false.
 
-Live acceptance additionally needs the credential and anchor steps in `GOOGLE_SHEETS_SETUP.md`, an ops-validated read of the approved copy, and Lead acceptance of the Data candidate. Section 8's admin probe remains a separate, narrow single-cell proof with its own token environment variable; it is not the runtime path and has not been run live either.
+Live acceptance additionally needs approved stable anchors, a trusted roster,
+full schedule scope and ops acceptance. Section 8's completed admin probe is a
+separate, narrow single-cell proof with its own token environment variable; it
+is not the runtime path.

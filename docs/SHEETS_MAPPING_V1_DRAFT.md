@@ -12,8 +12,10 @@ chỉ nói nguồn của bản xuất dùng để khảo sát. Chủ dự án đ
 kiểm soát trên đúng workbook này: chọn ca thử, chỉ sửa D, giữ J và ghi bằng
 chứng trước/sau. Không cần xin lại URL hoặc xác nhận lại tính chất bản sao.
 Workbook production không được nhắm tới. `.bee-bot/source/schedule.xlsx`
-vẫn là bản xuất đọc-only, không phải đích ghi. Quyền truy cập API/phiên Sheets
-thật cần được kiểm tra riêng; xuất XLSX đọc thành công không chứng minh quyền ghi.
+vẫn là bản xuất đọc-only, không phải đích ghi. Ngày 11/10/2026, service account
+đã đọc được tab thật qua Sheets API và phép thử D278/J278 trên bản sao đã ghi
+tạm, xác minh rồi khôi phục D. Điều này chưa nghiệm thu cơ chế định danh dòng,
+danh sách labcoach hoặc ghi tự động từ bot.
 
 Đây là ảnh chụp dữ liệu tại lúc đọc, không phải kết nối đồng bộ đang hoạt động. Không lưu danh sách tên người hoặc link nhóm Zalo vào tài liệu này.
 
@@ -144,4 +146,4 @@ Trạng thái yêu cầu và issue phải được theo dõi riêng với cột 
 
 Ý nghĩa D/J, giờ Sáng/Chiều, nguồn chuẩn B–J, vận hành xác thực liên kết Zalo và kiểm tra lịch chương trình kết hợp người nhận tự xác nhận không có lịch bận khác đã chốt; không hỏi lại các nguyên tắc này.
 
-Đã chốt thêm bot giữ nguyên J, hạn lời mời 24 giờ tối đa đến lúc ca bắt đầu, mời đồng thời sau chấp nhận nghỉ và người nhận đủ điều kiện sớm nhất được nhận. Các điểm còn mở: mã ca/vị trí ổn định, danh sách người dùng, danh mục bảng/kỳ lịch chương trình; cơ chế giữ vị trí và phục hồi lỗi; số vị trí bắt buộc nếu cần theo dõi ca thiếu người; cách đưa kỳ lịch mới vào hệ thống. Chi tiết quyền và thông báo tiếp tục được rà soát theo đặc tả. Hermes Agent đã được chọn; kiến trúc tích hợp và cách triển khai vẫn cần chốt, chưa bắt đầu ghi lên Sheets.
+Đã chốt thêm bot giữ nguyên J, hạn lời mời 24 giờ tối đa đến lúc ca bắt đầu, mời đồng thời sau chấp nhận nghỉ và người nhận đủ điều kiện sớm nhất được nhận. Các điểm còn mở: mã ca/vị trí ổn định, danh sách người dùng, danh mục bảng/kỳ lịch chương trình; cơ chế giữ vị trí và phục hồi lỗi; số vị trí bắt buộc nếu cần theo dõi ca thiếu người; cách đưa kỳ lịch mới vào hệ thống. Chi tiết quyền và thông báo tiếp tục được rà soát theo đặc tả. Hermes Agent đã được chọn; phép thử ghi D278 trên bản sao đã thành công và khôi phục, nhưng chưa bắt đầu ghi tự động từ bot.

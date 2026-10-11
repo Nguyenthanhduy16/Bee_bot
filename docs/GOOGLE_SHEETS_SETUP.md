@@ -85,8 +85,10 @@ creates; callers close injected clients. `close()` releases its own HTTP client.
 
 ## Credentials: recommended persistent-bot setup
 
-The owner has not supplied credentials. All verification in this candidate is
-offline. Lead/ops performs these steps separately; Peer does not execute them:
+At offline acceptance, credentials had not yet been supplied. The owner has
+since supplied a dedicated service-account key and enabled Sheets API on the
+test project. Lead completed the bounded live checks recorded below. The setup
+steps for another deployment remain:
 
 1. In an owner-controlled Google Cloud project, enable **Google Sheets API**.
 2. Create a dedicated service account for the persistent bot. Grant no broad
@@ -253,13 +255,37 @@ J and every other column are absent from the write. Sheets has no value-level
 compare-and-set in this protocol: an edit/row move/tab rename between the final
 GET and PUT remains a race. Swap is not atomic; partial writes remain uncertain.
 Full program coverage, roster identity, metadata behavior after real insertion,
-permissions, OAuth/key validity, live quota handling and restore/save behavior
-are unverified by mocks. Do not claim live/pilot acceptance from these tests.
+live quota/error handling and service recovery remain unverified. The bounded
+live checks below establish only their stated scope; do not claim pilot acceptance.
 
 Errors never include raw exception text, Google bodies, URLs, IDs, cell names or
 values. HTTP/auth library request logging is suppressed only during private I/O
 in the current context. There is no diagnostic payload logging. Test injected
 clients/credentials must not introduce their own unsanitized logging.
+
+## Bounded live check on the authorized copy — 11/10/2026
+
+Lead stored the service-account credential outside Git in an owner-only directory
+(`0700`) with file mode `0600`. Authentication and a Sheets metadata GET
+succeeded. The pinned tab has 1000 grid rows and 20 columns. A backend-shaped
+read of A–J normalized 390 numeric-STT positions and 434 relevant merges in
+about 0.65 seconds; transport coverage found exactly those 390 positions and
+no extra candidate rows. No row developer metadata exists yet.
+
+The separate admin probe confirmed D278/J278 against the private snapshot,
+temporarily wrote only D278, verified J278 was unchanged, restored D278 and
+confirmed the bounded range matched its original state. A prior read-only
+check made one GET; the execute phase made three GETs and two PUTs. A subsequent
+same-value D278 PUT returned HTTP 200, `updatedCells`, `updatedRows` and
+`updatedColumns` all equal to 1, and a quoted `updatedRange` accepted by the
+runtime transport for this Vietnamese tab title. D278/J278 were unchanged on
+readback. Private values and request evidence remain outside Git. Runtime
+`write_enabled` remains false; the worker remains stopped.
+
+This does not establish anchor stability, trusted roster coverage, concurrent
+edit handling, swap recovery, quota tolerance or the second Zalo account's
+acceptance. Do not enable the runtime Google backend for write until those gates
+are accepted.
 
 ## Offline verification
 
@@ -273,6 +299,6 @@ The tests use `httpx.MockTransport`, synthetic tab data and mocked refresh. No
 real Sheets/Zalo/model calls or runtime/profile/inbox edits are required.
 Factory and worker wiring have separate offline tests in
 `tests/test_schedule_factory.py` and `tests/test_zalo_worker.py`. These checks
-do not establish live Sheets acceptance. Credentials, stable row anchors,
+do not establish live Sheets acceptance. Stable row anchors, a trusted roster,
 approved write anchors and the second Zalo account's test window remain inputs
 for a controlled end-to-end trial.

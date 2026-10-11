@@ -205,3 +205,35 @@ QA ACCEPT chính xác snapshot `c61c9cc2…`: bảy file giữ nguyên hash đ�
 Data bàn giao AUTH-HARDEN ba file: `google_sheets_transport.py` ca69574f…, `test_google_sheets_transport.py` a0196f8d…, `GOOGLE_SHEETS_SETUP.md` 9ce8762a…. Owner báo 155 test transport đạt, full-suite 722 đạt; phiên điều phối tái chạy tập transport/sidecar/factory 224 đạt, `git diff --check` sạch. Credential nhiều scope giờ bị từ chối trước API; tệp credential phải ở ngoài repo, regular, không qua symlink và không có quyền group/world. Đã đóng băng snapshot `.bee-bot/reviews/google_auth_harden_20261011_v1/manifest.json` hash `6b9c192e…` và giao QA Claude review hẹp; chưa ACCEPT hardening cho tới khi có phản hồi QA. V2-2 vẫn cần xác nhận receipt từ Google thật; chưa có credential để chạy.
 
 QA ACCEPT AUTH-HARDEN đúng snapshot `6b9c192e…`: cả ba file trùng hash đầu/cuối, 155 transport tests và full-suite 722 tests đạt ở môi trường Peer; phiên điều phối kiểm tra lại tập liên quan 224 đạt. V2-1/V2-3 đã đóng cho increment offline. QA còn ghi nhận hai giới hạn thấp: đường dẫn parent có thể bị thay trong khoảng kiểm tra–mở, và hardlink ngoài repo trỏ cùng inode với file trong repo. Đã sửa mô tả code/tài liệu để không hứa bảo đảm tuyệt đối; vận hành phải giữ thư mục credential private `0700`. Không có credential thật, chưa chạy API thật. Trước pilot vẫn cần xác nhận V2-2 receipt cho tab thực tế, anchor/roster/coverage, chi phí đọc và các quy tắc sửa đồng thời.
+
+## Checkpoint Sheets live có giới hạn — 11/10/2026
+
+Các câu “chưa có credential/chưa chạy API” ở những checkpoint lịch sử phía trên
+đã được thay thế bởi checkpoint này. Chủ dự án đã cung cấp service-account JSON,
+bật Google Sheets API cho project thử và chia sẻ workbook bản sao. Khóa được
+lưu ngoài Git trong thư mục riêng `0700`, file `0600`; đường dẫn nằm ở cấu hình
+riêng và không ghi vào tài liệu/commit. Tệp tải lên gốc cũng được thu hẹp về
+`0600`. Bot/worker vẫn dừng, cấu hình probe trở lại `write_enabled=false`.
+
+Service account xác thực thành công và Sheets metadata GET trả HTTP 200: đúng
+tab cho phép, gid đã đối chiếu, grid 1000 dòng × 20 cột. Probe đọc chỉ một
+lần GET trả `PRECONDITIONS_MATCH` cho D278/J278. Probe execute dùng ba GET,
+hai PUT: chỉ D278 thay đổi tạm, J278 giữ nguyên, sau đó D278 và toàn vùng
+bounded được xác nhận khôi phục. Một PUT cùng giá trị tiếp theo trên D278
+trả receipt HTTP 200 với quoted `updatedRange` và ba số lượng cập nhật đều 1;
+D/J không đổi sau đọc lại. V2-2 đã được kiểm chứng đúng với tab tiếng Việt này.
+Giá trị ô và bằng chứng thô chỉ có trong `.bee-bot/` riêng, không đưa vào Git.
+
+Đường đọc của transport hiện tại đã chạy trên API thật: A–J có 390 dòng STT
+số, 390 ứng viên theo coverage, 434 merge liên quan và không có ứng viên dư;
+một lượt đọc đo được khoảng 0,65 giây. Chưa có developer metadata nào trên
+workbook, vì vậy chưa có stable row anchor cho runtime. Phép thử D đơn lẻ
+không chứng minh roster, ánh xạ Zalo, lịch chương trình đầy đủ, sửa đồng thời,
+hoán đổi một phần, giới hạn quota hay phục hồi service. Chưa bật backend Google
+cho worker và chưa mở pilot.
+
+Lead tiếp theo cần chốt với ops cơ chế ID vị trí (metadata hoặc sidecar thử),
+roster labcoach ↔ tên trên Sheets đã xác thực, phạm vi các workbook/tab/kỳ lịch
+để kiểm tra xung đột, quy tắc khi vận hành sửa D đồng thời và xử lý ghi chưa rõ.
+Sau khi có các đầu vào đó, QA nghiệm thu backend đọc/ghi với anchor trên bản
+sao, rồi mới lên lịch thử tài khoản Zalo thứ hai và quyết định mức pilot.
