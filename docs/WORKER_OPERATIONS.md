@@ -2,7 +2,8 @@
 
 Tài liệu chuẩn bị vận hành; chưa cài service bền hoặc mở pilot. Luồng hiện tại
 là polling với Hermes thật, lịch JSON thử. Worker đã dừng lúc 14:48 ngày
-11/10/2026; không bật lại trong đợt phát triển offline này.
+11/10/2026. Ngày 12/10 worker được bật tạm cho lượt thử Zalo với bạn giả lập
+Hermes, rồi dừng sau hai tin. Chưa có service chạy thường trực.
 
 Backend đích là Google Sheets API Python phía sau SheetsScheduleAdapter.
 Hermes chỉ gọi Bee Bot MCP; không cấp tool Sheets update/append tổng quát cho
@@ -24,6 +25,26 @@ hợp, với phạm vi Sheets cần thiết và không phụ thuộc phiên Chat
 - Kiểm tra pending/processing/uncertain inbox và sending/uncertain delivery
   chỉ đọc trước khởi động. Restart không chứng minh thao tác trước chưa ghi
   hoặc chưa gửi. Không đổi hàng loạt trạng thái thành pending để thử lại.
+
+## Phân biệt profile, worker và tài khoản Zalo trong lượt thử
+
+- Profile Hermes là cấu hình/session của agent, **không** phải một bot Zalo mới.
+  `bee-zalo` cũ ghim vào state dir `.bee-bot/zalo-demo` và vai An; lượt thử
+  Duy/Bình dùng profile `bee-zalo-duy-binh-test` với state dir JSON/SQLite
+  riêng. Bình giả lập dùng `bee-bot-binh-duy-test` trên cùng state dir, không
+  có tài khoản Zalo thứ hai. Không đổi đường dẫn DB/lịch của profile cũ để
+  khớp bài thử mới: kiểm tra cấu hình sẽ từ chối drift ngoài migration được
+  hỗ trợ, và các session/inbox cũ cần được giữ để đối chiếu.
+- Profile tồn tại không có nghĩa là worker đang nghe Zalo. Lệnh `--once` nhận
+  một lượt rồi thoát; nếu người thử nhắn khi worker dừng thì inbox cục bộ
+  không tự có tin đó. Zalo `getUpdates` không có offset được tài liệu hóa;
+  không giả định tin gửi lúc offline sẽ được phát lại. Bật worker thử **trước**
+  khi người thử nhắn, đối chiếu `completed` và delivery `sent` trong inbox,
+  rồi dừng có kiểm soát. Nếu cần trả lời liên tục, triển khai service bền và
+  theo dõi ở mục dưới, thay vì dựa vào một lệnh `--once`.
+- Xác nhận của Bình trong lượt 12/10 là hành động của persona giả lập qua
+  Hermes/MCP trên lịch JSON. Kết quả đó không xác thực danh tính hay việc rảnh
+  của một labcoach thật, và không mở quyền ghi Sheets.
 
 ## Service thường trực cần kiểm chứng
 
