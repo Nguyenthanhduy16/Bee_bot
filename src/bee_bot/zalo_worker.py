@@ -21,7 +21,7 @@ from dotenv import dotenv_values
 from .errors import BeeBotError
 from .hermes_sessions import label_zalo_session
 from .service import BeeBotService
-from .schedule import JsonSchedule
+from .schedule_factory import create_schedule
 from .notification_text import render_notification
 from .zalo import ZaloBotClient, ZaloIngress
 
@@ -42,20 +42,33 @@ SKILL_REFERENCE = "Đọc skill `bee-bot` khi xử lý yêu cầu."
 MEMORY_DISABLED = {"memory_enabled": False, "user_profile_enabled": False}
 
 
-def managed_soul(project):
+def managed_soul(project, backend="json"):
     """Deterministic SOUL for the shared profile; Bee Bot guidance is embedded.
 
     The shared profile has no skill toolset, so senders cannot create or patch
     instructions that other senders' sessions would load.
     """
+    if backend not in {"json", "google_sheets_test_copy"}:
+        raise BeeBotError("SCHEDULE_BACKEND_INVALID", "Backend lịch không được hỗ trợ.")
     soul = (project / "examples/SOUL.md").read_text(encoding="utf-8")
+    if backend == "google_sheets_test_copy":
+        context = ZALO_CHANNEL_CONTEXT.replace(
+            "Kênh thử Zalo — hội thoại thật, lịch JSON giả", "Kênh thử Zalo — hội thoại thật, lịch Google Sheets bản sao")
+        context = context.replace("Tên của actor trong lịch JSON là vai thử", "Tên của actor trong lịch thử là vai đã xác thực")
+        context = context.replace("vai thử đang dùng lịch giả", "vai đã xác thực đang dùng bản sao thử")
+        context = context.replace("Dữ liệu ca là JSON thử, chưa ghi Google Sheets thật.",
+                                  "Dữ liệu ca lấy từ Google Sheets bản sao thử. Chỉ tin kết quả cập nhật do Bee Bot MCP xác nhận.")
+        replacement = "Đây là Google Sheets bản sao thử; chỉ báo đã cập nhật khi Bee Bot MCP xác nhận. Thông báo outbox chưa tự chứng minh đã giao qua Zalo."
+    else:
+        context = ZALO_CHANNEL_CONTEXT
+        replacement = "Đây là lịch JSON thử, chưa cập nhật Sheets thật. Thông báo ghi trong outbox chưa tự chứng minh đã giao qua Zalo."
     soul = soul.replace("Đây là lịch JSON và thông báo giả lập, không có cập nhật Sheets hoặc gửi Zalo thật.",
-                        "Đây là lịch JSON thử, chưa cập nhật Sheets thật. Thông báo ghi trong outbox chưa tự chứng minh đã giao qua Zalo.")
+                        replacement)
     soul = soul.replace(SKILL_REFERENCE, "Làm theo hướng dẫn hội thoại Bee Bot ở cuối tài liệu này.")
     skill = (project / "examples/skills/bee-bot/SKILL.md").read_text(encoding="utf-8")
     if skill.startswith("---\n"):
         skill = skill.split("\n---\n", 1)[1]
-    return ZALO_CHANNEL_CONTEXT + soul.rstrip() + "\n\n" + skill.strip() + "\n"
+    return context + soul.rstrip() + "\n\n" + skill.strip() + "\n"
 
 
 class StageError(BeeBotError):
@@ -106,6 +119,15 @@ class HermesRunner:
             raise ValueError
         project = Path(__file__).resolve().parents[2]
         state = self.state_dir or project / ".bee-bot"
+        schedule_env = {"BEE_BOT_SCHEDULE": str(state / "schedule.json")}
+        backend = os.environ.get("BEE_BOT_SCHEDULE_BACKEND", "json")
+        if backend == "google_sheets_test_copy":
+            config_path = os.environ.get("BEE_BOT_SHEETS_CONFIG")
+            if not config_path or not Path(config_path).is_absolute():
+                raise BeeBotError("SHEETS_CONFIG_REQUIRED", "Cần đường dẫn tuyệt đối tới cấu hình Sheets riêng ngoài Git.")
+            schedule_env = {"BEE_BOT_SCHEDULE_BACKEND": backend, "BEE_BOT_SHEETS_CONFIG": config_path}
+        elif backend != "json":
+            raise BeeBotError("SCHEDULE_BACKEND_INVALID", "Backend lịch không được hỗ trợ.")
         config = {
             "model": {key: model[key] for key in ("default", "provider")},
             "mcp_servers": {"bee_bot": {
@@ -118,12 +140,12 @@ class HermesRunner:
                         "BEE_BOT_ZALO_DISPLAY_NAME": "${BEE_BOT_ZALO_DISPLAY_NAME}",
                         "BEE_BOT_CHANNEL": "zalo",
                         "BEE_BOT_DB": str(state / "state.db"),
-                        "BEE_BOT_SCHEDULE": str(state / "schedule.json")},
+                        **schedule_env},
             }},
             "platform_toolsets": {"acp": [self.TOOLSETS]},
             "memory": dict(MEMORY_DISABLED),
         }
-        return config, model, managed_soul(project)
+        return config, model, managed_soul(project, backend)
 
     @staticmethod
     def _legacy(config):
@@ -135,6 +157,30 @@ class HermesRunner:
         without_name = deepcopy(legacy)
         without_name["mcp_servers"]["bee_bot"]["env"].pop("BEE_BOT_ZALO_DISPLAY_NAME")
         return [legacy, without_name]
+
+    @staticmethod
+    def _schedule_switch(current, target, current_soul):
+        """Accept only a known JSON ↔ test-copy profile change, with clean SOUL."""
+        try:
+            previous = deepcopy(current)
+            desired = deepcopy(target)
+            old_env = previous['mcp_servers']['bee_bot']['env']
+            new_env = desired['mcp_servers']['bee_bot']['env']
+            old_backend = old_env.pop('BEE_BOT_SCHEDULE_BACKEND', 'json')
+            new_backend = new_env.pop('BEE_BOT_SCHEDULE_BACKEND', 'json')
+            old_config = old_env.pop('BEE_BOT_SHEETS_CONFIG', None)
+            new_config = new_env.pop('BEE_BOT_SHEETS_CONFIG', None)
+            old_json = old_env.pop('BEE_BOT_SCHEDULE', None)
+            new_json = new_env.pop('BEE_BOT_SCHEDULE', None)
+            valid_old = ((old_backend == 'json' and old_json and old_config is None)
+                         or (old_backend == 'google_sheets_test_copy' and old_config and old_json is None))
+            valid_new = ((new_backend == 'json' and new_json and new_config is None)
+                         or (new_backend == 'google_sheets_test_copy' and new_config and new_json is None))
+            project = Path(__file__).resolve().parents[2]
+            return (bool(valid_old and valid_new and old_backend != new_backend)
+                    and previous == desired and current_soul == managed_soul(project, old_backend))
+        except (KeyError, TypeError, ValueError):
+            return False
 
     @staticmethod
     def _comparable(installed, model):
@@ -169,7 +215,8 @@ class HermesRunner:
                 current_soul = (target / "SOUL.md").read_text(encoding="utf-8")
                 if comparable == config and current_soul == soul:
                     return name
-                if comparable != config and comparable not in self._legacy(config):
+                if (comparable != config and comparable not in self._legacy(config)
+                        and not self._schedule_switch(comparable, config, current_soul)):
                     raise BeeBotError("ZALO_PROFILE_CONFLICT", "Profile Zalo thử đã có cấu hình khác; cần kiểm tra trước khi dùng.")
                 if not migrate:
                     raise BeeBotError("ZALO_PROFILE_MIGRATION_REQUIRED",
@@ -359,7 +406,8 @@ def main():
                 values = dotenv_values(args.env_file, interpolate=False)
             except (OSError, UnicodeError):
                 raise BeeBotError("ZALO_CONFIG", "Không đọc được tệp cấu hình Zalo đã chọn.") from None
-            for key in {"ZALO_BOT_TOKEN", "ZALO_WEBHOOK_SECRET", "BEE_BOT_ZALO_IDENTITIES", "BEE_BOT_ZALO_INBOX"}:
+            for key in {"ZALO_BOT_TOKEN", "ZALO_WEBHOOK_SECRET", "BEE_BOT_ZALO_IDENTITIES", "BEE_BOT_ZALO_INBOX",
+                        "BEE_BOT_SCHEDULE_BACKEND", "BEE_BOT_SHEETS_CONFIG"}:
                 if values.get(key) is not None:
                     os.environ[key] = values[key]
         token = os.environ.get("ZALO_BOT_TOKEN")
@@ -377,7 +425,7 @@ def main():
             except BlockingIOError:
                 raise BeeBotError("ZALO_WORKER_RUNNING", "Đã có worker Zalo chạy trong thư mục trạng thái này.") from None
             ingress = ZaloIngress(os.environ.get("BEE_BOT_ZALO_INBOX", str(args.state_dir / "zalo-inbox.db")), identities=mapping, webhook_secret=os.environ.get("ZALO_WEBHOOK_SECRET", ""))
-            service = BeeBotService(args.state_dir / "state.db", JsonSchedule(args.state_dir / "schedule.json"))
+            service = BeeBotService(args.state_dir / "state.db", create_schedule(args.state_dir / "schedule.json"))
             runner = HermesRunner(state_dir=args.state_dir)
             for actor in set(mapping.values()):
                 service.get_my_assignments(actor)

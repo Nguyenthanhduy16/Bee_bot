@@ -225,6 +225,47 @@ def test_managed_soul_embeds_bee_bot_guidance_without_skill_reference(tmp_path):
     assert "chưa cập nhật Sheets thật" in text
 
 
+def test_google_copy_profile_pins_same_backend_as_worker(tmp_path, monkeypatch):
+    source_profile(tmp_path)
+    private = tmp_path / 'private-sheets.json'
+    monkeypatch.setenv('BEE_BOT_SCHEDULE_BACKEND', 'google_sheets_test_copy')
+    monkeypatch.setenv('BEE_BOT_SHEETS_CONFIG', str(private))
+    runner = HermesRunner(tmp_path)
+    expected, _, soul = runner._expected()
+    env = expected['mcp_servers']['bee_bot']['env']
+    assert env['BEE_BOT_SCHEDULE_BACKEND'] == 'google_sheets_test_copy'
+    assert env['BEE_BOT_SHEETS_CONFIG'] == str(private)
+    assert 'BEE_BOT_SCHEDULE' not in env
+    assert 'Google Sheets bản sao thử' in soul
+    assert 'Dữ liệu ca là JSON thử' not in soul
+
+
+def test_google_copy_profile_rejects_relative_private_config(tmp_path, monkeypatch):
+    source_profile(tmp_path)
+    monkeypatch.setenv('BEE_BOT_SCHEDULE_BACKEND', 'google_sheets_test_copy')
+    monkeypatch.setenv('BEE_BOT_SHEETS_CONFIG', 'relative.json')
+    with pytest.raises(BeeBotError) as error:
+        HermesRunner(tmp_path)._expected()
+    assert error.value.code == 'SHEETS_CONFIG_REQUIRED'
+
+
+def test_json_to_google_profile_switch_requires_explicit_migration(tmp_path, monkeypatch):
+    source_profile(tmp_path)
+    runner = HermesRunner(tmp_path)
+    runner.prepare_profile()
+    profile = tmp_path / 'bee-zalo'
+    before = (profile / 'config.yaml').read_bytes()
+    monkeypatch.setenv('BEE_BOT_SCHEDULE_BACKEND', 'google_sheets_test_copy')
+    monkeypatch.setenv('BEE_BOT_SHEETS_CONFIG', str(tmp_path / 'private.json'))
+    with pytest.raises(BeeBotError) as error:
+        runner.prepare_profile()
+    assert error.value.code == 'ZALO_PROFILE_MIGRATION_REQUIRED'
+    assert (profile / 'config.yaml').read_bytes() == before
+    assert runner.prepare_profile(migrate=True) == 'bee-zalo'
+    assert 'Google Sheets bản sao thử' in (profile / 'SOUL.md').read_text()
+    assert list((profile / '.bee-bot-backups').iterdir())
+
+
 def test_runner_labels_new_session_and_updates_name_when_resuming(tmp_path):
     source_profile(tmp_path)
     runner = HermesRunner(tmp_path)

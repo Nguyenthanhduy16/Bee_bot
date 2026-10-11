@@ -7,7 +7,16 @@ name = "bee-bot"
 version = "0.1.0"
 description = "Local Labcoach operations prototype for Hermes Agent"
 requires-python = ">=3.11"
-dependencies = ["mcp>=1.20,<2", "openpyxl>=3.1.5,<4", "pyyaml>=6,<7", "httpx>=0.28,<1", "starlette>=1.7,<2", "uvicorn>=0.54,<1", "python-dotenv>=1,<2"]
+dependencies = [
+    "mcp>=1.20,<2",
+    "openpyxl>=3.1.5,<4",
+    "pyyaml>=6,<7",
+    "httpx>=0.28,<1",
+    "starlette>=1.7,<2",
+    "uvicorn>=0.54,<1",
+    "python-dotenv>=1,<2",
+    "google-auth[requests]>=2,<3",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8,<9"]

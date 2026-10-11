@@ -37,7 +37,12 @@ class BeeBotService:
         self._lock = threading.RLock()
 
     def close(self):
-        self.store.close()
+        try:
+            self.store.close()
+        finally:
+            close = getattr(self.schedule, 'close', None)
+            if close is not None:
+                close()
 
     def _now(self):
         value = self.clock()
@@ -423,9 +428,11 @@ class BeeBotService:
                             for identifier, coach in request['planned_updates'].items())
         except Exception:
             all_match = False
+        # Applied-but-invalid guard: matching target cells alone never complete a request.
+        conflict = self._applied_conflict(request) if all_match else None
         request['observed_assignments'] = actual
         request['reconciled_at'] = self._now().isoformat()
-        if all_match:
+        if all_match and not conflict:
             first_completion = request['status'] != 'completed'
             request.update(status='completed', completed_at=self._now().isoformat())
             if first_completion:
@@ -433,10 +440,37 @@ class BeeBotService:
                 recipients = [request['owner_id'], request['reserved_for']] + self._ops()
                 self._notify(recipients, 'request_completed', request_id=request['id'])
         else:
-            request.update(status='reconciliation_required', reason='WRITE_NOT_VERIFIED')
-            if previous_status != 'reconciliation_required' or previous_observed != actual:
-                self._notify(self._ops(), 'reconciliation_required', request_id=request['id'])
+            previous_reason = request.get('reason')
+            request.update(status='reconciliation_required', reason=conflict or 'WRITE_NOT_VERIFIED')
+            if (previous_status != 'reconciliation_required' or previous_observed != actual
+                    or previous_reason != request['reason']):
+                self._notify(self._ops(), 'reconciliation_required', request_id=request['id'],
+                             reason=request['reason'])
         return self._save_request(request)
+
+    def _applied_conflict(self, request):
+        """Read-only: reason the applied result is invalid, or None. Never writes or retries."""
+        planned, snapshots = request['planned_updates'], request['snapshots']
+        try:
+            current = self.schedule.list_assignments()
+            for identifier, coach in planned.items():
+                targets = [a for a in current if a['assignment_id'] == identifier]
+                if (len(targets) != 1 or targets[0].get('coach_id') != coach
+                        or any(targets[0].get(k) != snapshots[identifier].get(k)
+                               for k in SIGNATURE if k not in {'coach_id', 'revision'})):
+                    # Target reads and the full schedule read are separate: a target
+                    # can disappear or drift between them, even on JsonSchedule.
+                    return 'APPLIED_VERIFICATION_FAILED'
+                if any(other['assignment_id'] != identifier and other.get('coach_id') == coach
+                       and overlaps(targets[0], other) for other in current):
+                    return 'APPLIED_SCHEDULE_CONFLICT'
+            verify = getattr(self.schedule, 'verify_applied', None)
+            if verify is not None and verify(planned, snapshots) is not True:
+                # Adapter-level: incomplete scope, pinned identity or confirmed details.
+                return 'APPLIED_VERIFICATION_FAILED'
+        except Exception:
+            return 'APPLIED_VERIFICATION_FAILED'
+        return None
 
     def _exhausted(self, request):
         if not any(i['status'] in {'pending', 'incomplete'} and moment(i['expires_at']) > self._now()

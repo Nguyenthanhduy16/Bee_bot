@@ -1,4 +1,4 @@
-"""Hermes-facing MCP tools with one trusted, fixed local demo identity."""
+"""Hermes-facing MCP tools with a trusted, fixed actor and schedule backend."""
 
 import logging
 import hashlib
@@ -12,8 +12,38 @@ from mcp.server.fastmcp import FastMCP
 
 from .errors import BeeBotError
 from .schedule import JsonSchedule
+from .schedule_factory import create_schedule
 
 logger = logging.getLogger(__name__)
+
+
+def _schedule_context(schedule):
+    """Describe the service's trusted instance, never ambient backend/model input.
+
+    Expose only policy and scope, not private workbook IDs, tabs or config paths.
+    The Google factory sets backend_name on the constructed adapter.
+    """
+    if isinstance(schedule, JsonSchedule):
+        return {"schedule": "fake_json", "schedule_backend": "json",
+                "provenance": {"kind": "synthetic"},
+                "live_integrations": False, "actor_is_demo_persona": True}
+    from .sheets_adapter import SheetsScheduleAdapter
+    if isinstance(schedule, SheetsScheduleAdapter):
+        coverage = schedule.coverage()  # Public read validates the pinned provenance.
+        provenance = schedule.provenance
+        synthetic = provenance["kind"] == "synthetic"
+        backend = getattr(schedule, "backend_name", "sheets_adapter")
+        google = backend == "google_sheets_test_copy"
+        return {"schedule": "google_sheets_test_copy" if google else (
+                    "synthetic_sheets" if synthetic else "sheets_test_copy"),
+                "schedule_backend": backend,
+                "provenance": {"kind": provenance["kind"],
+                               "owner_confirmed_copy": provenance.get("owner_confirmed_copy") is True,
+                               "scope": coverage["scope"], "writable": coverage["writable"],
+                               "compare_and_set": coverage["compare_and_set"]},
+                "live_integrations": True if google else (False if synthetic else None),
+                "actor_is_demo_persona": synthetic}
+    raise BeeBotError("SCHEDULE_BACKEND_UNKNOWN", "Không xác định được backend lịch đã cấu hình.")
 
 
 def create_server(service=None, actor_id=None):
@@ -23,15 +53,16 @@ def create_server(service=None, actor_id=None):
     if service is None:
         from .service import BeeBotService
         base = Path(os.environ.get("BEE_BOT_DATA_DIR", ".bee-bot")).resolve()
-        schedule = JsonSchedule(os.environ.get("BEE_BOT_SCHEDULE", str(base / "schedule.json")))
+        schedule = create_schedule()
         service = BeeBotService(os.environ.get("BEE_BOT_DB", str(base / "state.db")), schedule)
     people = service.schedule.list_people()
     person = next((entry for entry in people if entry["person_id"] == actor_id and entry.get("active")), None)
     if person is None:
         raise BeeBotError("INVALID_ACTOR", "Danh tính thử không tồn tại hoặc đã ngừng hoạt động.")
     mcp = FastMCP("Bee Bot", instructions=(
-        "Bee Bot local prototype: actor is fixed by trusted server configuration. "
-        "Fake schedule and notifications only, no live Sheets/Zalo. "
+        "Bee Bot: actor is fixed by trusted server configuration. "
+        "Read get_bot_context for the configured schedule backend and provenance. "
+        "Notifications are stored in a durable local outbox. "
         "Use authoritative tool results; never invent successful updates. "
         "Ask direct explicit confirmation before submitting requests or accepting invitations."
     ))
@@ -74,7 +105,7 @@ def create_server(service=None, actor_id=None):
 
     @mcp.tool()
     def get_bot_context() -> dict:
-        """Identify the configured local demo persona and simulation boundaries. Cannot change identity."""
+        """Read the trusted actor, schedule backend and provenance. Cannot change identity or configuration."""
         try:
             current = next((entry for entry in service.schedule.list_people()
                             if entry["person_id"] == actor_id and entry.get("active")), None)
@@ -83,8 +114,9 @@ def create_server(service=None, actor_id=None):
             display_name = os.environ.get("BEE_BOT_ZALO_DISPLAY_NAME", "")
             if display_name.startswith("${") or not 1 <= len(display_name) <= 80 or not display_name.isprintable():
                 display_name = None
-            return {"ok": True, "result": {"actor": current, "schedule": "fake_json", "notifications": "durable_fake_outbox", "live_integrations": False,
-                                           "zalo_display_name": display_name, "actor_is_demo_persona": True}}
+            return {"ok": True, "result": {"actor": current, **_schedule_context(service.schedule),
+                                           "notifications": "durable_fake_outbox",
+                                           "zalo_display_name": display_name}}
         except BeeBotError as exc:
             return exc.as_dict()
         except Exception as exc:
@@ -134,7 +166,7 @@ def create_server(service=None, actor_id=None):
 
     @mcp.tool()
     def get_my_invitations() -> dict:
-        """Read invitations addressed to this authenticated demo persona."""
+        """Read invitations addressed to this authenticated person."""
         return call("get_my_invitations")
 
     @mcp.tool()

@@ -1,10 +1,19 @@
 # Bee Bot — Đối chiếu Google Sheets lịch hiện tại
 
 - **Ngày đọc:** 10/10/2026.
-- **Nguồn:** [Google Sheets “Lịch lab” do người phụ trách cung cấp](https://docs.google.com/spreadsheets/d/1t2Gqji-T5-4ILiJCGCf4kVmQCurKXzk_3jJfOp6AJnI/edit?usp=sharing).
+- **Workbook khảo sát:** bản sao thử “Lịch lab” do chủ dự án cung cấp; định danh/truy cập lưu riêng ngoài Git.
 - **Cách đọc:** bản xuất XLSX chỉ đọc; kiểm tra cấu trúc workbook, ô dữ liệu, ô gộp và danh sách giá trị trạng thái. Không sửa Sheets nguồn.
 - **Trạng thái:** đã quan sát cấu trúc và được người phụ trách xác nhận ý nghĩa D/J, giờ ca, nguồn chuẩn B–J; cách định danh và ghi dữ liệu là đề xuất đang rà soát.
 - **Liên quan:** [Đặc tả hội thoại và dữ liệu](WORKFLOW_SPEC_V1_DRAFT.md).
+
+**Chỉnh đính 11/10/2026:** workbook đã khảo sát là BẢN SAO chủ dự án gửi để
+thử đọc/ghi, không phải workbook production. Cách gọi “nguồn” ở tài liệu cũ
+chỉ nói nguồn của bản xuất dùng để khảo sát. Chủ dự án đã cho phép test có
+kiểm soát trên đúng workbook này: chọn ca thử, chỉ sửa D, giữ J và ghi bằng
+chứng trước/sau. Không cần xin lại URL hoặc xác nhận lại tính chất bản sao.
+Workbook production không được nhắm tới. `.bee-bot/source/schedule.xlsx`
+vẫn là bản xuất đọc-only, không phải đích ghi. Quyền truy cập API/phiên Sheets
+thật cần được kiểm tra riêng; xuất XLSX đọc thành công không chứng minh quyền ghi.
 
 Đây là ảnh chụp dữ liệu tại lúc đọc, không phải kết nối đồng bộ đang hoạt động. Không lưu danh sách tên người hoặc link nhóm Zalo vào tài liệu này.
 
