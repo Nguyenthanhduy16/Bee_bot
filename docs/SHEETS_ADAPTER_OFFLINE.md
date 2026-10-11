@@ -117,7 +117,7 @@ Tests: `.venv/bin/python -m pytest -q tests/test_sheets_adapter_core.py`.
 ## 7. Blocked only for the real pilot
 
 - Access to the authorized test workbook is established for the observed tab. Runtime configuration still needs the approved full tab catalogue, trusted roster, anchor map and allowlist before the bot can use it.
-- The real anchor mechanism (developer metadata or an ID column) and consent from the Sheets owner, verified on the copy.
+- Row metadata is attached and read on the copy; verify sort/copy-paste behaviour and obtain ops acceptance before runtime use.
 - Roster details: a mapping from D names to verified person IDs, ops/roles and active status, and the policy for people with the same name.
 - The catalogue of tabs and schedule periods for cross-tab overlap checks.
 - An ops coordination policy for the lost-update window (the Q4 follow-up), for example a protected range during writes or an edit window.
@@ -220,10 +220,10 @@ The owner gate `_check_google_copy` runs twice, first on the config-derived prov
 **Mock tests are not live acceptance.** `tests/test_schedule_factory.py` covers JSON selection, the fail-closed backend and config checks, the owner gate, and a Google construction path with a substituted transport. `tests/test_google_sheets_transport.py` and the Google MCP test in `tests/test_mcp.py` drive the real transport class with injected credentials and `httpx.MockTransport`, so every HTTP response is fabricated locally. None of this is live acceptance:
 
 - A dedicated service-account credential is now present outside Git. Lead ran bounded live GET/PUT checks on the authorized copy, separate from these mock tests.
-- The developer-metadata anchor key and its per-row values are not ops-approved, so stable identity on the real copy is unverified.
+- The owner chose row metadata for the copy. After the live row-location bug was fixed, 390 row IDs were attached and `read_tab()` verified them; sorting/copy-paste and ops acceptance are still open.
 - One live A–J read covered the 390 observed positions and took about 0.65 seconds. Quota, sustained latency, real error behaviour and full program coverage remain unproven; `production_ready` stays false.
 
-Live acceptance additionally needs approved stable anchors, a trusted roster,
+Live acceptance additionally needs anchor acceptance under real editing, a trusted roster,
 full schedule scope and ops acceptance. Section 8's completed admin probe is a
 separate, narrow single-cell proof with its own token environment variable; it
 is not the runtime path.

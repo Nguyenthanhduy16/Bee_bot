@@ -228,7 +228,9 @@ This is a test-only sidecar, not production-safe movable identity.
 
 The [spreadsheet GET](https://developers.google.com/workspace/sheets/api/reference/rest/v4/spreadsheets/get)
 requests one quoted A–J grid range and a field mask for ID/gid/title, merges,
-developer metadata, `effectiveValue` and `userEnteredValue`. One response avoids
+`data.rowMetadata.developerMetadata`, `effectiveValue` and `userEnteredValue`.
+Row-attached metadata is returned in `GridData.rowMetadata`, not in the
+spreadsheet- or sheet-level metadata arrays. One response avoids
 joining separate metadata/value snapshots. Effective values preserve numbers,
 strings, booleans and blanks, instead of the values API's default formatted
 strings. A–I formulas and error values block scope; J formulas remain literal
@@ -287,6 +289,34 @@ edit handling, swap recovery, quota tolerance or the second Zalo account's
 acceptance. Do not enable the runtime Google backend for write until those gates
 are accepted.
 
+## Row metadata trial and copy setup — 12/10/2026
+
+The owner chose row-attached developer metadata on the test copy. Lead created
+a temporary synthetic tab, attached one `PROJECT`-visible row ID, inserted and
+moved the row, verified the ID followed it, then deleted the tab and confirmed
+the ID was gone. A first trial on the actual schedule row exposed a transport
+bug: `spreadsheets.get` puts row IDs under `GridData.rowMetadata`, while the
+transport only read workbook/sheet metadata arrays. The trial ID was removed.
+The transport and mock tests now read and validate the row-level location; a
+second one-row live trial resolved row 278 and removed its trial ID.
+
+After a fresh structure/coverage check, Lead attached 390 opaque IDs with key
+`bee_bot_pos_v1` to exactly the 390 observed assignment rows in one atomic
+`batchUpdate`. A private plan outside Git records the planned row fingerprints,
+IDs and returned metadata IDs. Readback found all 390 at the planned rows and
+the runtime `read_tab()` passed. The metadata uses about 18,720 characters of
+the sheet's 30,000-character metadata allocation. A bounded live transport
+`write_d` call targeted only the approved D278 anchor with its existing value;
+the transport accepted Google's receipt and a subsequent full A–J read was
+identical, including J. Runtime configuration remains write-disabled and the
+worker stopped.
+
+The 346 named positions yield 51 distinct column-D names. A private CSV of
+candidate names was prepared for ops to verify; it is **not** a trusted roster
+and contains no accepted person ID or Zalo mapping. Google metadata follows
+insert/move in the synthetic trial; sort/copy-paste, concurrent edits, full
+schedule coverage and business acceptance remain unverified.
+
 ## Offline verification
 
 From `/home/duy/VinAI/Bee_Bot`:
@@ -299,6 +329,6 @@ The tests use `httpx.MockTransport`, synthetic tab data and mocked refresh. No
 real Sheets/Zalo/model calls or runtime/profile/inbox edits are required.
 Factory and worker wiring have separate offline tests in
 `tests/test_schedule_factory.py` and `tests/test_zalo_worker.py`. These checks
-do not establish live Sheets acceptance. Stable row anchors, a trusted roster,
-approved write anchors and the second Zalo account's test window remain inputs
+do not establish live Sheets acceptance. An ops-verified roster, full schedule
+scope, approved runtime write anchors and the second Zalo account's test window remain inputs
 for a controlled end-to-end trial.

@@ -76,7 +76,7 @@ Ví dụ quan sát: F156 là **H210**, N156 là **H205**; F362 là **H210**, N36
 
 Hai ca cùng ngày và cùng buổi có giờ giao nhau; sáng và chiều không giao nhau theo giờ đã chốt. Hoán đổi kiểm tra trên lịch sau đổi. **Đã chốt:** bot kiểm tra lịch chương trình, người nhận tự xác nhận không có lịch bận khác trong ca nhận; còn cần liệt kê đủ các bảng/kỳ lịch chương trình được tích hợp.
 
-Không thấy cột mã người, mã ca hoặc mã vị trí phân công chuyên biệt. STT lặp lại và tọa độ dòng có thể đổi khi chèn/sắp xếp, nên không đủ làm định danh lâu dài. Cách bổ sung mã vào Sheets hoặc duy trì ánh xạ riêng còn cần chọn; chưa chỉnh bảng nguồn.
+Không thấy cột mã người, mã ca hoặc mã vị trí phân công chuyên biệt. STT lặp lại và tọa độ dòng có thể đổi khi chèn/sắp xếp, nên không đủ làm định danh lâu dài. Ngày 12/10/2026, chủ dự án chọn mã developer metadata gắn với dòng trên bản sao; 390 mã đã được gắn và đọc lại thành công. Chưa nghiệm thu hành vi sort/copy-paste hoặc dùng các mã này cho pilot.
 
 ## 3. Ánh xạ đọc/ghi đề xuất dựa trên nguồn đã chốt
 

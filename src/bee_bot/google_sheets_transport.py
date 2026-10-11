@@ -279,7 +279,7 @@ class GoogleSheetsTransport:
         # formulas/errors without a second, potentially mismatched values GET.
         payload = self._request('GET', params={
             'ranges': self._range(f'A1:J{self._max_rows + 1}'),
-            'fields': 'spreadsheetId,developerMetadata,sheets(properties(sheetId,title,gridProperties(rowCount,columnCount)),merges,developerMetadata,data(startRow,startColumn,rowData(values(userEnteredValue,effectiveValue))))',
+            'fields': 'spreadsheetId,developerMetadata,sheets(properties(sheetId,title,gridProperties(rowCount,columnCount)),merges,developerMetadata,data(startRow,startColumn,rowData(values(userEnteredValue,effectiveValue)),rowMetadata(developerMetadata)))',
         })
         try:
             rows, merges, metadata = self._normalize(payload)
@@ -315,6 +315,7 @@ class GoogleSheetsTransport:
             raise _error('SCHEDULE_SCOPE_INCOMPLETE')
         rows = [{'row': i, 'anchor': None, 'cells': dict.fromkeys(COLUMNS)} for i in range(1, n + 1)]
         seen = set()
+        row_metadata = []
         for grid in sheet.get('data', []):
             start, column = grid.get('startRow', 0), grid.get('startColumn', 0)
             if not _integer(start) or not _integer(column) or column != 0:
@@ -350,6 +351,21 @@ class GoogleSheetsTransport:
                                 or kind not in {'numberValue', 'stringValue', 'boolValue'}):
                             raise ValueError
                     rows[index]['cells'][c] = value
+            for offset, dimension in enumerate(grid.get('rowMetadata', [])):
+                index = start + offset
+                if index >= n or not isinstance(dimension, dict):
+                    raise ValueError
+                items = dimension.get('developerMetadata', [])
+                if not isinstance(items, list):
+                    raise ValueError
+                for item in items:
+                    if not isinstance(item, dict):
+                        raise ValueError
+                    location = item.get('location', {}).get('dimensionRange', {})
+                    if (location.get('sheetId') != self._gid or location.get('dimension') != 'ROWS'
+                            or location.get('startIndex') != index or location.get('endIndex') != index + 1):
+                        raise ValueError
+                    row_metadata.append(item)
         merges = []
         for m in sheet.get('merges', []):
             if m.get('sheetId', self._gid) != self._gid:
@@ -361,7 +377,7 @@ class GoogleSheetsTransport:
             if c < 10:
                 merges.append({'start': a + 1, 'end': b, 'columns': list(COLUMNS[c:min(d, 10)])})
         merges.sort(key=lambda m: (m['start'], m['end'], m['columns']))
-        return rows, merges, payload.get('developerMetadata', []) + sheet.get('developerMetadata', [])
+        return rows, merges, payload.get('developerMetadata', []) + sheet.get('developerMetadata', []) + row_metadata
 
     def _metadata_anchors(self, metadata, row_count):
         anchors, seen_ids = {}, {}

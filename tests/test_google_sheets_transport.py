@@ -169,6 +169,37 @@ def test_read_pinned_grid_preserves_types_blanks_merges_and_existing_anchors(api
     assert set(tab) == {'rows', 'merges'}
 
 
+def test_real_google_row_dimension_metadata_is_used_for_anchors(api):
+    # Sheets returns row-attached metadata under GridData.rowMetadata, not in
+    # the spreadsheet or sheet-level developerMetadata fields.
+    items = api.payload.pop('developerMetadata')
+    grid = api.payload['sheets'][0]['data'][0]
+    grid['rowMetadata'] = [{} for _ in grid['rowData']]
+    for item in items:
+        index = item['location']['dimensionRange']['startIndex']
+        grid['rowMetadata'][index]['developerMetadata'] = [item]
+
+    tab = api.transport.read_tab()
+    assert [row['anchor'] for row in tab['rows'][3:6]] == ['opaque-a', 'opaque-b', 'opaque-c']
+    assert 'rowMetadata(developerMetadata)' in api.requests[0].url.params['fields']
+    api.transport.write_d('opaque-a', 'Synthetic Binh', 'private-copy', "Synthetic O'Brien")
+    assert api.requests[-1].method == 'PUT'
+
+
+def test_row_metadata_location_mismatch_blocks_write(api):
+    items = api.payload.pop('developerMetadata')
+    grid = api.payload['sheets'][0]['data'][0]
+    grid['rowMetadata'] = [{} for _ in grid['rowData']]
+    for item in items:
+        index = item['location']['dimensionRange']['startIndex']
+        grid['rowMetadata'][index]['developerMetadata'] = [item]
+    grid['rowMetadata'][3], grid['rowMetadata'][4] = grid['rowMetadata'][4], grid['rowMetadata'][3]
+
+    assert_code('SCHEDULE_MALFORMED', lambda: api.transport.write_d(
+        'opaque-a', 'Synthetic Binh', 'private-copy', "Synthetic O'Brien"))
+    assert not any(request.method == 'PUT' for request in api.requests)
+
+
 def test_real_adapter_mapping_and_d_only_raw_write_preserve_entire_rest_of_workbook(api):
     adapter = SheetsScheduleAdapter(api.transport, synthetic_roster(), ['private-copy'], ['protected-source'])
     coverage = adapter.coverage()

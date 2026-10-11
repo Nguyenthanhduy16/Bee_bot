@@ -237,3 +237,29 @@ roster labcoach ↔ tên trên Sheets đã xác thực, phạm vi các workbook/
 để kiểm tra xung đột, quy tắc khi vận hành sửa D đồng thời và xử lý ghi chưa rõ.
 Sau khi có các đầu vào đó, QA nghiệm thu backend đọc/ghi với anchor trên bản
 sao, rồi mới lên lịch thử tài khoản Zalo thứ hai và quyết định mức pilot.
+
+## Checkpoint mã dòng trên bản sao — 12/10/2026
+
+Chủ dự án chọn thử mã ẩn gắn vào dòng của bản sao và cho biết chưa có tệp roster
+labcoach đã xác thực. Lead thử trên tab tạm dữ liệu giả: gắn mã, chèn/di chuyển
+dòng, xác nhận mã đi theo, rồi xóa tab và mã. Lần thử đầu trên dòng lịch thật
+phát hiện bug thực tế: Google trả row metadata trong `GridData.rowMetadata`,
+không nằm ở các mảng metadata mức workbook/tab mà transport trước đó đọc.
+Mã thử đã được gỡ. Đã sửa `google_sheets_transport.py` để yêu cầu và kiểm tra
+metadata ở đúng vị trí, thêm mock regression cho shape thật và vị trí sai;
+226 test transport/sidecar/factory đạt, 135 test MCP/adapter/QA đạt khi bỏ
+1 stdio test bị treo trong môi trường phiên này. Thử lại một mã trên dòng 278
+đã được backend đọc đúng và xóa sạch sau đó.
+
+Sau khi kiểm tra lại cấu trúc và coverage, Lead chuẩn bị kế hoạch private rồi
+gắn `PROJECT` row metadata key `bee_bot_pos_v1` cho đúng 390 dòng vị trí trong
+một `batchUpdate`. Google trả receipt; đọc lại và `read_tab()` xác nhận đủ 390
+mã tại đúng dòng. Không sửa ô dữ liệu. Gọi live `write_d` của transport cho
+anchor D278, ghi lại cùng giá trị hiện tại, được receipt hợp lệ; toàn bộ A–J
+đọc lại giống trước, J không đổi. Metadata plan và ID chỉ lưu ngoài Git.
+
+Đã lập CSV riêng ngoài Git gồm 51 tên D khác nhau từ 346 vị trí có tên, để
+ops bổ sung mã người, liên kết Zalo, vai trò và xác thực. CSV này chỉ là ứng
+viên, chưa được dùng làm trusted roster. Worker/backend runtime vẫn khóa ghi;
+chưa nghiệm thu thao tác sort/copy-paste, sửa D đồng thời, lịch chương trình
+đầy đủ, hoán đổi nhiều ô hoặc người dùng Zalo thứ hai. Pilot vẫn đóng.
